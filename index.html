@@ -303,15 +303,12 @@
       .price-box .row.headline-price span:first-child { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
       .price-box .row.headline-price span:last-child { color: var(--accent); font-size: 32px; font-weight: 800; line-height: 1; }
       .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-      /* Email design summary (Step 11): opens a pre-filled Gmail
-         compose window in a new tab (a plain mailto: tap is silently
-         swallowed when this page is shown inside an app frame, and
-         does nothing on phones with no mail app set up). Gated like
-         Copy until the agreement is ticked in step 10. */
+      /* Send design summary (Step 11): SEND QUOTE is a plain
+         button that posts the quote directly through Forminit —
+         it is not a link, so no Gmail or email window can open.
+         Gated like Copy until the agreement is ticked in step 10. */
       .btn.email-btn { text-decoration: none; }
       .btn.email-btn.is-disabled { opacity: 0.55; cursor: not-allowed; }
-      .email-app-link { font-weight: 700; }
-      .email-app-link.is-disabled { opacity: 0.55; cursor: not-allowed; }
       .pay-gate { font-size: 13.5px; font-weight: 700; color: var(--muted); margin: 8px 0 0; }
       .pay-gate.ok { color: var(--good); }
       .pay-note {
@@ -608,6 +605,7 @@
       button:focus-visible, input:focus-visible, .artwork:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     </style>
+    <script src="https://forminit.com/sdk/v1/forminit.js"></script>
   </head>
   <body>
     <main>
@@ -630,7 +628,7 @@
         <a class="pstep" data-pstep="11" href="#sec-save"><span class="pnum">11</span>Send</a>
       </nav>
 
-      <p class="lede">Design your own printed gear in a few taps: pick an item, add your logo, drag it into place, and choose your sizes — your price updates live as you go, including 9.5% Los Angeles tax (shipping is added later at Wix checkout). Then email your design summary at the end to oneonegraphics@gmail.com to place your order. Just follow the steps in order, 1 to 11.</p>
+      <p class="lede">Design your own printed gear in a few taps: pick an item, add your logo, drag it into place, and choose your sizes — your price updates live as you go, including 9.5% Los Angeles tax (shipping is added later at Wix checkout). Then send your design summary straight from this page at the end to place your order. Just follow the steps in order, 1 to 11.</p>
       <p class="biz-strip" id="bizStrip" hidden></p>
 
 
@@ -871,7 +869,7 @@
             <div class="detected-box" id="detectedLocations" aria-live="polite" style="margin-top:0"></div>
             <p class="seg-note" id="comboHint"></p>
             <div class="price-box" id="priceBox" aria-live="polite"></div>
-            <p class="price-note">Your total above includes 9.5% Los Angeles tax. Shipping is not included — it is added later at Wix checkout. When you are ready, email your design summary in step 11 to oneonegraphics@gmail.com to place your order. If you&rsquo;re providing your own garment (step 9), you only pay for the printing — there&rsquo;s no garment charge.</p>
+            <p class="price-note">Your total above includes 9.5% Los Angeles tax. Shipping is not included — it is added later at Wix checkout. When you are ready, send your design summary in step 11 to place your order. If you&rsquo;re providing your own garment (step 9), you only pay for the printing — there&rsquo;s no garment charge.</p>
             <p class="price-note" id="orderNotesDisplay" hidden style="font-weight:600; color:var(--ink);"></p>
           </section>
 
@@ -891,7 +889,7 @@
 
           <section id="sec-save" data-step-sec="11" aria-labelledby="h-save">
             <h2 id="h-save"><span class="step">11</span>Send your quote</h2>
-            <p class="step-hint">Email the summary to us — that’s what you send in for your order. Add your email first so we can reply to you.</p>
+            <p class="step-hint">Send the summary straight to us from this page — no email app opens. Add your email first so we can reply to you.</p>
             <pre class="summary" id="summaryBox" aria-live="polite"></pre>
             <div class="own-email-field customer-email-field">
               <label for="customerEmail">Your email — so we can reply to you *</label>
@@ -903,20 +901,20 @@
               <span class="file-name" id="copyMsg" style="margin:0; align-self:center"></span>
             </div>
             <div class="logo-attach-note" id="logoAttachNotice">
-              <span class="attach-head">Stop — attach your logo file before you press Send</span>
-              <span id="logoAttachText">Upload your logo in step 2 first. When you tap SEND QUOTE below, a Gmail window opens — tap the paperclip (Attach files) icon in that window and attach your original logo file before pressing Send, so One Graphics receives the actual logo file with your quote request — the summary by itself does not send the file.</span>
+              <span class="attach-head">Your logo file is sent for you</span>
+              <span id="logoAttachText">Upload your logo in step 2 first. When you tap SEND QUOTE below, your logo file is sent to One Graphics automatically with your quote — nothing else opens and there is nothing to attach by hand.</span>
             </div>
             <div class="btn-row">
-              <a class="btn primary email-btn is-disabled" id="emailSummaryBtn" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=oneonegraphics@gmail.com" target="_blank" rel="noopener noreferrer" aria-disabled="true">SEND QUOTE</a>
+              <button type="button" class="btn primary email-btn is-disabled" id="emailSummaryBtn" aria-disabled="true">SEND QUOTE</button>
             </div>
             <div class="quote-sent" id="quoteSentConfirmation" role="status" hidden>
               <span class="quote-sent-head">✓ Your quote was sent</span>
               Thank you for your inquiry — we will get back to you as soon as possible.
             </div>
-            <p class="seg-note">Tap “SEND QUOTE” — a Gmail window opens with your summary already filled in, addressed to oneonegraphics@gmail.com. <strong>Before you press Send in that window, tap the paperclip (Attach files) icon and attach your original logo file to the email</strong> so we receive the actual file with your quote request. Prefer your own mail app? <a class="email-app-link is-disabled" id="emailAppLink" href="mailto:oneonegraphics@gmail.com" aria-disabled="true">Open in my email app instead</a> — attach your logo file there too before sending. If neither opens, tap “Copy the design summary” above and paste it into an email to oneonegraphics@gmail.com, and attach your logo file to that email.</p>
+            <p class="seg-note">Tap “SEND QUOTE” and your summary and logo file go straight to One Graphics at oneonegraphics@gmail.com — <strong>no Gmail or email window opens</strong>. You’ll see a green confirmation right here on this page when your quote has been sent. If sending ever fails, your design stays on this page — just tap SEND QUOTE again, or tap “Copy the design summary” above to keep a copy of your summary.</p>
             <p class="pay-gate" id="emailMsg" aria-live="polite"></p>
             <p class="pay-gate" id="saveGateMsg" aria-live="polite"></p>
-            <p class="seg-note">In the live version this is the step where the design would be sent in for a proof — production begins after approval, once you’ve seen and OK’d exactly how it will print. This prototype has no checkout and takes no payment — your price above includes 9.5% Los Angeles tax, and shipping is added later at Wix checkout. Email your design summary to oneonegraphics@gmail.com to place your order.</p>
+            <p class="seg-note">In the live version this is the step where the design would be sent in for a proof — production begins after approval, once you’ve seen and OK’d exactly how it will print. This prototype has no checkout and takes no payment — your price above includes 9.5% Los Angeles tax, and shipping is added later at Wix checkout. Send your design summary from this page to place your order.</p>
           </section>
         </div>
       </div>
@@ -1289,6 +1287,7 @@
           printSize: "standard",
           designs: { front: null, back: null, pocket: null },
           originalName: "",
+          originalFile: null,
           artComment: "",
           ownGarment: false,
           ownGarmentDetails: "",
@@ -2429,9 +2428,9 @@
           return PLACEMENT_LABEL[p] + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (d.bgRemoved ? ", background removed in the preview" : "");
         }
         /* Exact uploaded logo file names ("Front: name.png", …) for
-           the current design — used by the summary's attach reminders
-           and by the Step 11 status messages, so the customer is told
-           the precise file to attach to the email. */
+           the current design — used by the summary's file notes and
+           by the Step 11 status messages, so the precise file(s)
+           included with the quote are named. */
         function uploadedLogoNames() {
           var names = [];
           ["front", "back", "pocket"].forEach(function (p) {
@@ -2441,24 +2440,23 @@
           });
           return names;
         }
-        /* The attach reminder that opens and closes the email body.
-           A web page cannot attach a file itself, so the customer has
-           to do it in Gmail — this makes that step unmissable and
-           names the exact file(s) to attach. */
+        /* The file note that opens and closes the summary body.
+           SEND QUOTE submits through Forminit and includes the
+           actual uploaded file(s) with the quote, so this simply
+           names the exact file(s) included with the submission —
+           the customer never has to attach anything by hand. */
         function attachReminderLines(names) {
           var out = [];
           out.push("****************************************************");
-          out.push("*** STOP — ATTACH YOUR LOGO FILE BEFORE YOU PRESS SEND ***");
+          out.push("*** LOGO FILE(S) INCLUDED WITH THIS QUOTE ***");
           out.push("****************************************************");
           if (names.length) {
-            out.push("Your uploaded logo file(s) — attach these exact file(s):");
+            out.push("The following file(s) are included with this quote submission:");
             names.forEach(function (n) { out.push("  - " + n); });
             if (state.originalName) out.push("  - Original file: " + state.originalName);
-            out.push("In Gmail, tap the paperclip (Attach files) icon, choose that exact file from your device, and attach it to this email BEFORE pressing Send.");
           } else {
-            out.push("If you uploaded a logo in step 2, attach that original logo file to this email before pressing Send: in Gmail, tap the paperclip (Attach files) icon and choose the file from your device.");
+            out.push("No logo file was uploaded in step 2.");
           }
-          out.push("This summary does NOT send the file by itself — One Graphics can only print your logo if the original file is attached to the email.");
           return out;
         }
         function sectionHead(lines, title) {
@@ -2508,7 +2506,7 @@
           } else {
             lines.push("Uploaded logo file: none uploaded yet");
           }
-          if (state.originalName) lines.push("Print original file (please also attach this file to your email before sending): " + state.originalName);
+          if (state.originalName) lines.push("Print original file (included with this quote submission): " + state.originalName);
           else if (fileRules.requireOriginal) lines.push("Print original: NOT attached — the shop requires the AI / PSD / PDF original for production.");
           if (state.artComment && state.artComment.trim()) lines.push("Customer comment about the logo: " + state.artComment.trim());
           sectionHead(lines, "SIZES & QUANTITIES");
@@ -2638,8 +2636,8 @@
           agreeBox.classList.toggle("checked", !!state.agreed);
           var rushOk = rushDateOk();
           /* Copy keeps its original gate (agreement + rush date).
-             SEND QUOTE and the email-app fallback additionally need a
-             valid customer email from step 11. */
+             SEND QUOTE additionally needs a valid customer email
+             from step 11. */
           var copyOk = !!state.agreed && rushOk;
           var emailOk = customerEmailValid();
           var saveOk = copyOk && emailOk;
@@ -2678,18 +2676,14 @@
             emailBtnEl.classList.toggle("is-disabled", !saveOk);
             emailBtnEl.setAttribute("aria-disabled", saveOk ? "false" : "true");
           }
-          var emailAppEl = document.getElementById("emailAppLink");
-          if (emailAppEl) {
-            emailAppEl.classList.toggle("is-disabled", !saveOk);
-            emailAppEl.setAttribute("aria-disabled", saveOk ? "false" : "true");
-          }
+
           /* Say WHY Copy / SEND QUOTE are greyed, right beside them in
              step 11 — otherwise meeting the minimum in step 8 looks
              like nothing happened when the buttons stay locked. */
           var saveGateMsg = document.getElementById("saveGateMsg");
           if (saveGateMsg) {
             if (saveOk) {
-              saveGateMsg.textContent = "✓ Confirmed — Copy and SEND QUOTE are unlocked. Remember to attach your logo file to the email before you press Send.";
+              saveGateMsg.textContent = "✓ Confirmed — Copy and SEND QUOTE are unlocked. Your logo file is sent automatically with your quote — nothing else opens.";
               saveGateMsg.className = "pay-gate ok";
             } else if (!rushOk) {
               saveGateMsg.textContent = state.agreed
@@ -2720,9 +2714,9 @@
               if (dd && dd.name) names.push(PLACEMENT_LABEL[p] + ": " + dd.name);
             });
             if (names.length) {
-              attachText.textContent = "Your uploaded logo file is " + names.join("; ") + (state.originalName ? ", and your original file is " + state.originalName : "") + ". When you tap SEND QUOTE below, a Gmail window opens — tap the paperclip (Attach files) icon in that window and attach that exact original logo file" + (state.originalName ? " (and the original file)" : "") + " BEFORE you press Send, so One Graphics receives the actual logo file with your quote request — the summary by itself does not send the file.";
+              attachText.textContent = "Your uploaded logo file is " + names.join("; ") + (state.originalName ? ", and your original file is " + state.originalName : "") + ". When you tap SEND QUOTE below, that file is sent to One Graphics automatically with your quote — no email window opens and there is nothing to attach by hand.";
             } else {
-              attachText.textContent = "Upload your logo in step 2 first. When you tap SEND QUOTE below, a Gmail window opens — tap the paperclip (Attach files) icon in that window and attach your original logo file before pressing Send, so One Graphics receives the actual logo file with your quote request — the summary by itself does not send the file.";
+              attachText.textContent = "Upload your logo in step 2 first. When you tap SEND QUOTE below, your logo file is sent to One Graphics automatically with your quote — no email window opens and there is nothing to attach by hand.";
             }
           }
         }
@@ -3002,7 +2996,7 @@
             if (old && old.blob) URL.revokeObjectURL(old.src);
             var isSvg = /\.svg$/.test(lower);
             var d = {
-              src: url, name: file.name,
+              src: url, name: file.name, file: file,
               aspect: probe.naturalWidth && probe.naturalHeight ? probe.naturalWidth / probe.naturalHeight : 1.6,
               naturalW: isSvg ? 0 : probe.naturalWidth,
               isVector: isSvg, isDefault: false, white: false, blob: true,
@@ -3027,6 +3021,7 @@
           ev.target.value = "";
           if (!file) return;
           state.originalName = file.name;
+          state.originalFile = file;
           render();
         });
 
@@ -3067,31 +3062,54 @@
           } else { done(false); }
         });
 
-        /* ---------- Email design summary (Step 11) ---------- */
-        /* The main button opens a Gmail compose window in a new tab,
-           pre-addressed to the shop with the full design summary as
-           the body — an ordinary https link, so it opens even when
-           this page is displayed inside an app frame. A plain
-           mailto: tap does NOT reliably open anything in that frame
-           (the browser swallows it silently) or on a phone with no
-           default mail app configured, which is why mailto is only
-           the secondary "email app" link. Both links are gated like
-           Copy: blocked until the agreement is ticked in step 10
-           (renderAgreement toggles the dimmed look). Both URLs are
-           built fresh at click time so the body always matches the
-           summary shown above, and each click leaves a status line
-           saying what should have opened plus the copy-and-paste
-           fallback, so a blocked open never looks like nothing
-           happened. */
+        /* ---------- Send design summary (Step 11) ---------- */
+        /* SEND QUOTE is a plain <button>, not a link: it has no
+           href and no target, so tapping it can never open Gmail,
+           an email app, or any other tab. It posts the quote
+           straight to the shop through Forminit. The FormData
+           carries the customer's email (fi-sender-email), the full
+           design summary text (fi-text-design_summary), the rush
+           date when rush is selected (fi-date-rush_date), and the
+           actual uploaded files — Front / Back / Pocket logos plus
+           the separate AI/PSD/PDF original — all in one
+           multiple-file group (fi-file-logo[]). Files totalling
+           more than 24 MB are stopped with a message before
+           anything is sent. The green "quote was sent" confirmation
+           shows ONLY on a real success (no error and a string
+           hashId back from Forminit). On any failure the customer's
+           input stays exactly as it was and a plain-language
+           message explains what happened — there is deliberately
+           no email-app fallback link, so nothing on this step can
+           open an email tab. Gating is unchanged: agreement ticked
+           in step 10, a rush date when one is required, and a valid
+           customer email (renderAgreement toggles the dimmed
+           look). */
         var emailMsgEl = document.getElementById("emailMsg");
-        function emailSubject() {
-          return "Custom design order — " + currentProduct().label + " design summary";
+        /* Forminit rejects curly apostrophes in sender fields, so
+           straighten them before anything is submitted. */
+        function straightenApostrophes(s) {
+          return String(s == null ? "" : s).replace(/[‘’]/g, "'");
         }
+        /* The real File objects behind the current design: one per
+           enabled print location that has artwork, plus the separate
+           original (AI/PSD/PDF) file when one was attached. */
+        function quoteFiles() {
+          var files = [];
+          ["front", "back", "pocket"].forEach(function (p) {
+            if (!locEnabled(p)) return;
+            var dd = state.designs[p];
+            if (dd && dd.file) files.push(dd.file);
+          });
+          if (state.originalFile) files.push(state.originalFile);
+          return files;
+        }
+        var quoteSending = false;
         var emailSummaryBtnEl = document.getElementById("emailSummaryBtn");
         if (emailSummaryBtnEl) {
           emailSummaryBtnEl.addEventListener("click", function (e) {
+            e.preventDefault();
+            if (quoteSending) return;
             if (!state.agreed || !rushDateOk() || !customerEmailValid()) {
-              e.preventDefault();
               if (emailMsgEl && !rushDateOk()) {
                 emailMsgEl.textContent = "Rush date required — pick the date you need it by in the rush box above your price before emailing your design.";
                 emailMsgEl.className = "pay-gate";
@@ -3102,40 +3120,64 @@
               }
               return;
             }
-            emailSummaryBtnEl.href = "https://mail.google.com/mail/?view=cm&fs=1&to=oneonegraphics@gmail.com&su=" + encodeURIComponent(emailSubject()) + "&body=" + encodeURIComponent(buildSummary());
-            showQuoteSentConfirmation();
-            if (emailMsgEl) {
-              var gmailLogoNames = uploadedLogoNames();
-              emailMsgEl.textContent = "Gmail is opening with your summary filled in — BEFORE you press Send: tap the paperclip (Attach files) icon in Gmail and attach your logo file" + (gmailLogoNames.length ? " — " + gmailLogoNames.join("; ") + (state.originalName ? "; Original file: " + state.originalName : "") : "") + ", so we receive the actual file. If no window opened, tap “Copy the design summary” above and paste it into an email to oneonegraphics@gmail.com, and attach your logo file there too.";
-              emailMsgEl.className = "pay-gate ok";
-            }
-          });
-        }
-        var emailAppLinkEl = document.getElementById("emailAppLink");
-        if (emailAppLinkEl) {
-          emailAppLinkEl.addEventListener("click", function (e) {
-            if (!state.agreed || !rushDateOk() || !customerEmailValid()) {
-              e.preventDefault();
-              if (emailMsgEl && !rushDateOk()) {
-                emailMsgEl.textContent = "Rush date required — pick the date you need it by in the rush box above your price before emailing your design.";
+            var filesToSend = quoteFiles();
+            var totalBytes = 0;
+            filesToSend.forEach(function (f) { totalBytes += f.size || 0; });
+            if (totalBytes > 24 * 1024 * 1024) {
+              if (emailMsgEl) {
+                emailMsgEl.textContent = "Your files add up to more than 24 MB, so they are too big to send with your quote this way. Please upload smaller copies of your files and tap SEND QUOTE again.";
                 emailMsgEl.className = "pay-gate";
-              } else if (emailMsgEl && !customerEmailValid()) {
-                emailMsgEl.textContent = "Your email is required — please enter a valid email address in the “Your email” box above so we can reply to you.";
-                emailMsgEl.className = "pay-gate";
-                if (customerEmailEl) { try { customerEmailEl.focus({ preventScroll: false }); } catch (err) { customerEmailEl.focus(); } }
               }
               return;
             }
-            emailAppLinkEl.href = "mailto:oneonegraphics@gmail.com?subject=" + encodeURIComponent(emailSubject()) + "&body=" + encodeURIComponent(buildSummary());
-            showQuoteSentConfirmation();
+            var formData = new FormData();
+            formData.append("fi-sender-email", straightenApostrophes(effectiveCustomerEmail()));
+            formData.append("fi-text-design_summary", buildSummary());
+            if (state.rushWanted && rushSettings.enabled && state.rushDate) {
+              formData.append("fi-date-rush_date", state.rushDate);
+            }
+            filesToSend.forEach(function (f) { formData.append("fi-file-logo[]", f); });
+            quoteSending = true;
+            hideQuoteSentConfirmation();
+            emailSummaryBtnEl.classList.add("is-disabled");
+            emailSummaryBtnEl.setAttribute("aria-disabled", "true");
             if (emailMsgEl) {
-              var appLogoNames = uploadedLogoNames();
-              emailMsgEl.textContent = "Your email app is opening with your summary filled in — BEFORE you press Send: tap Attach (the paperclip icon) in your email app and attach your logo file" + (appLogoNames.length ? " — " + appLogoNames.join("; ") + (state.originalName ? "; Original file: " + state.originalName : "") : "") + ", so we receive the actual file. If nothing opened, tap “Copy the design summary” above and paste it into an email to oneonegraphics@gmail.com, and attach your logo file there too.";
-              emailMsgEl.className = "pay-gate ok";
+              emailMsgEl.textContent = "Sending your quote…";
+              emailMsgEl.className = "pay-gate";
+            }
+            function sendSettled() {
+              quoteSending = false;
+              renderAgreement();
+            }
+            function sendFailed() {
+              sendSettled();
+              if (emailMsgEl) {
+                emailMsgEl.textContent = "Sorry — your quote could not be sent just now. Nothing was lost: your design and details are still here. Please tap SEND QUOTE to try again.";
+                emailMsgEl.className = "pay-gate";
+              }
+            }
+            try {
+              if (typeof Forminit === "undefined") throw new Error("Forminit SDK unavailable");
+              var forminit = new Forminit();
+              forminit.submit("t8xk1ozeuub", formData).then(function (result) {
+                var data = result && result.data;
+                var error = result && result.error;
+                if (!error && data && typeof data.hashId === "string") {
+                  sendSettled();
+                  showQuoteSentConfirmation();
+                  if (emailMsgEl) {
+                    emailMsgEl.textContent = "";
+                    emailMsgEl.className = "pay-gate";
+                  }
+                } else {
+                  sendFailed();
+                }
+              }, function () { sendFailed(); });
+            } catch (err) {
+              sendFailed();
             }
           });
         }
-
         /* Customer version: prices and shop settings live in the
            shop's own back end (Wix), not on this page. Nothing here
            is editable by visitors, no price is invented on this page,
