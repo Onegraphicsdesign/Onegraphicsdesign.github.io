@@ -304,7 +304,7 @@
       .price-box .row.headline-price span:first-child { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
       .price-box .row.headline-price span:last-child { color: var(--accent); font-size: 32px; font-weight: 800; line-height: 1; }
       .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-      /* Send design summary (Step 11): SEND QUOTE is a plain
+      /* Send design summary (Step 12): SEND QUOTE is a plain
          button that posts the quote directly through Forminit —
          it is not a link, so no Gmail or email window can open.
          Gated like Copy until the agreement is ticked in step 10. */
@@ -387,12 +387,33 @@
         border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink);
       }
       .own-email-field input[type="email"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-      /* Customer email (Step 11) + quote-sent confirmation */
+      /* Customer email (Step 12) + quote-sent confirmation */
       .customer-email-field { margin: 14px 0 4px; }
       .customer-email-field input[type="email"][aria-invalid="true"] { border-color: var(--bad); outline: 2px solid color-mix(in srgb, var(--bad) 35%, transparent); outline-offset: 1px; }
       .customer-email-status { font-size: 13.5px; font-weight: 700; margin: 8px 0 0; }
       .customer-email-status.ok { color: var(--good); }
       .customer-email-status.wait { color: var(--warn); }
+      /* Customer information (Step 11): name, company, email, phone
+         and shipping address, plus the payment-link choice. All
+         fields except Company name are required before SEND QUOTE
+         unlocks in step 12. */
+      .info-field { margin-top: 12px; }
+      .info-field label { display: block; font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
+      .info-field .info-optional { font-weight: 600; color: var(--muted); font-size: 13px; }
+      .info-field input {
+        width: 100%; font: inherit; font-weight: 600; padding: 10px 12px; min-height: 44px;
+        border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink);
+      }
+      .info-field input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+      .info-grid-3 { grid-template-columns: 2fr 1fr 1fr; }
+      @media (max-width: 560px) {
+        .info-grid, .info-grid-3 { grid-template-columns: 1fr; }
+      }
+      .paylink-q { font-weight: 700; font-size: 14.5px; margin: 18px 0 8px; }
+      .info-status { font-size: 13.5px; font-weight: 700; margin: 10px 0 0; }
+      .info-status.ok { color: var(--good); }
+      .info-status.wait { color: var(--warn); }
       .quote-sent {
         margin-top: 14px; padding: 14px 16px; border-radius: 8px;
         background: color-mix(in srgb, var(--good) 8%, var(--surface));
@@ -504,7 +525,7 @@
       }
       .panel section[id], .settings[id] { scroll-margin-bottom: 140px; }
       @media (max-width: 480px) {
-        /* Compact tracker on phones: with 11 steps the chips wrap to
+        /* Compact tracker on phones: with 12 steps the chips wrap to
            extra rows, so smaller chips keep more of them reachable
            above the fixed bottom bar at first load. */
         .progress { gap: 5px; margin-top: 10px; }
@@ -700,10 +721,11 @@
         <a class="pstep" data-pstep="8" href="#sec-qty"><span class="pnum">8</span>Quantities</a>
         <a class="pstep" data-pstep="9" href="#sec-own"><span class="pnum">9</span>Own garment</a>
         <a class="pstep" data-pstep="10" href="#sec-agree"><span class="pnum">10</span>Confirm</a>
-        <a class="pstep" data-pstep="11" href="#sec-save"><span class="pnum">11</span>Send</a>
+        <a class="pstep" data-pstep="11" href="#sec-info"><span class="pnum">11</span>Your information</a>
+        <a class="pstep" data-pstep="12" href="#sec-save"><span class="pnum">12</span>Send</a>
       </nav>
 
-      <p class="lede">Design your own printed gear in a few taps: pick an item, add your logo, drag it into place, and choose your sizes — your price updates live as you go, including 9.5% Los Angeles tax (shipping is added later at Wix checkout). Then send your design summary straight from this page at the end to place your order. Just follow the steps in order, 1 to 11.</p>
+      <p class="lede">Design your own printed gear in a few taps: pick an item, add your logo, drag it into place, and choose your sizes — your price updates live as you go, including 9.5% Los Angeles tax (shipping is added later at Wix checkout). Then send your design summary straight from this page at the end to place your order. Just follow the steps in order, 1 to 12.</p>
       <p class="biz-strip" id="bizStrip" hidden></p>
 
 
@@ -764,7 +786,7 @@
             <div class="comment-box">
               <label for="artComment">Add a comment about your logo</label>
               <textarea id="artComment" rows="3" placeholder="Anything production should know — for example: keep the lettering exactly as-is, match a specific color, or center it on the chest."></textarea>
-              <p class="seg-note" style="margin-top:6px;">Your comment is included in the design summary in step 11.</p>
+              <p class="seg-note" style="margin-top:6px;">Your comment is included in the design summary in step 12.</p>
             </div>
             <div class="btn-row" style="margin-top:0">
               <button type="button" class="btn small" id="removeArtBtn">Remove</button>
@@ -930,9 +952,9 @@
                 <div class="own-email-field">
                   <label for="ownEmail">Your email — so we can send you the shipping address</label>
                   <input type="email" id="ownEmail" placeholder="you@example.com" autocomplete="email" />
-                  <p class="seg-note" style="margin-top:6px;">After we receive your order, we&rsquo;ll email you where to ship your garment at this address. Your email is included in your design summary in step 11.</p>
+                  <p class="seg-note" style="margin-top:6px;">After we receive your order, we&rsquo;ll email you where to ship your garment at this address. Your email is included in your design summary in step 12.</p>
                 </div>
-                <p class="own-status wait" id="ownStatus" aria-live="polite">Please add a few details about your garment above and your email — they&rsquo;re included in your design summary in step 11. After we receive your order, we&rsquo;ll email you where to ship your garment.</p>
+                <p class="own-status wait" id="ownStatus" aria-live="polite">Please add a few details about your garment above and your email — they&rsquo;re included in your design summary in step 12. After we receive your order, we&rsquo;ll email you where to ship your garment.</p>
               </div>
             </div>
           </section>
@@ -947,13 +969,13 @@
               <div class="own-details" id="rushDetails" hidden>
                 <label for="rushDate">Need it by (date) — required for rush orders</label>
                 <input type="date" id="rushDate" aria-describedby="rushStatus" />
-                <p class="own-status wait" id="rushStatus" aria-live="polite">Rush date required — pick the date you need it by. Copy and SEND QUOTE stay locked until you do. It goes into your design summary in step 11.</p>
+                <p class="own-status wait" id="rushStatus" aria-live="polite">Rush date required — pick the date you need it by. Copy and SEND QUOTE stay locked until you do. It goes into your design summary in step 12.</p>
               </div>
             </div>
             <div class="detected-box" id="detectedLocations" aria-live="polite" style="margin-top:0"></div>
             <p class="seg-note" id="comboHint"></p>
             <div class="price-box" id="priceBox" aria-live="polite"></div>
-            <p class="price-note">Your total above includes 9.5% Los Angeles tax. Shipping is not included — it is added later at Wix checkout. When you are ready, send your design summary in step 11 to place your order. If you&rsquo;re providing your own garment (step 9), you only pay for the printing — there&rsquo;s no garment charge.</p>
+            <p class="price-note">Your total above includes 9.5% Los Angeles tax. Shipping is not included — it is added later at Wix checkout. When you are ready, send your design summary in step 12 to place your order. If you&rsquo;re providing your own garment (step 9), you only pay for the printing — there&rsquo;s no garment charge.</p>
             <p class="price-note" id="orderNotesDisplay" hidden style="font-weight:600; color:var(--ink);"></p>
           </section>
 
@@ -969,11 +991,65 @@
               </label>
               <p class="agree-status wait" id="agreeStatus">Please tick the box above to confirm before sending your quote.</p>
             </div>
+            <div class="btn-row">
+              <button type="button" class="btn primary" id="agreeNextBtn">Next: Your information →</button>
+            </div>
           </section>
 
-          <section id="sec-save" data-step-sec="11" aria-labelledby="h-save">
-            <h2 id="h-save"><span class="step">11</span>Send your quote</h2>
-            <p class="step-hint">Send the summary straight to us from this page — no email app opens. Add your email first so we can reply to you.</p>
+          <section id="sec-info" data-step-sec="11" aria-labelledby="h-info">
+            <h2 id="h-info"><span class="step">11</span>Your information</h2>
+            <p class="step-hint">Almost there — tell us who you are and where to ship your order, then pick how you want your payment link sent. Everything here is required before SEND QUOTE unlocks in step 12.</p>
+            <div class="info-field">
+              <label for="custName">Full name *</label>
+              <input type="text" id="custName" placeholder="Your full name" autocomplete="name" required aria-required="true" />
+            </div>
+            <div class="info-field">
+              <label for="custCompany">Company name <span class="info-optional">(optional)</span></label>
+              <input type="text" id="custCompany" placeholder="Company name — leave blank if none" autocomplete="organization" />
+            </div>
+            <div class="info-grid">
+              <div class="info-field">
+                <label for="custEmail">Email *</label>
+                <input type="email" id="custEmail" placeholder="you@example.com" autocomplete="email" required aria-required="true" />
+              </div>
+              <div class="info-field">
+                <label for="custPhone">Phone number *</label>
+                <input type="tel" id="custPhone" placeholder="555-123-4567" autocomplete="tel" required aria-required="true" />
+              </div>
+            </div>
+            <div class="info-field">
+              <label for="custStreet">Street address *</label>
+              <input type="text" id="custStreet" placeholder="Street address" autocomplete="street-address" required aria-required="true" />
+            </div>
+            <div class="info-grid info-grid-3">
+              <div class="info-field">
+                <label for="custCity">City *</label>
+                <input type="text" id="custCity" placeholder="City" autocomplete="address-level2" required aria-required="true" />
+              </div>
+              <div class="info-field">
+                <label for="custState">State *</label>
+                <input type="text" id="custState" placeholder="State" autocomplete="address-level1" required aria-required="true" />
+              </div>
+              <div class="info-field">
+                <label for="custZip">ZIP code *</label>
+                <input type="text" id="custZip" placeholder="ZIP" inputmode="numeric" autocomplete="postal-code" required aria-required="true" />
+              </div>
+            </div>
+            <p class="paylink-q" id="payLinkQ">How would you like to receive your payment link? *</p>
+            <div class="seg" role="group" aria-labelledby="payLinkQ" id="payLinkSeg">
+              <button type="button" data-paylink="email" aria-pressed="false">Email</button>
+              <button type="button" data-paylink="text" aria-pressed="false">Text (phone)</button>
+            </div>
+            <p class="seg-note">After you send your quote, we&rsquo;ll send your Wix payment link to the email or phone number you picked — that&rsquo;s where you pay.</p>
+            <p class="info-status wait" id="custInfoStatus" aria-live="polite">Please fill in every field above and pick Email or Text — SEND QUOTE in step 12 stays locked until your information is complete.</p>
+            <div class="btn-row">
+              <button type="button" class="btn primary" id="infoNextBtn">Next: Send your quote →</button>
+            </div>
+          </section>
+
+          <section id="sec-save" data-step-sec="12" aria-labelledby="h-save">
+            <h2 id="h-save"><span class="step">12</span>Send your quote</h2>
+            <p class="step-hint">Send the summary straight to us from this page — no email app opens. Your email from step 11 is filled in below so we can reply to you.</p>
             <pre class="summary" id="summaryBox" aria-live="polite"></pre>
             <div class="own-email-field customer-email-field">
               <label for="customerEmail">Your email — so we can reply to you *</label>
@@ -1022,7 +1098,7 @@
       <div class="sticky-bar" id="stickyBar">
         <div class="bar-info">
           <span class="bar-main" id="barMain">Your price appears here as you design</span>
-          <span class="bar-sub" id="barSub">Follow the steps in order, 1 to 11</span>
+          <span class="bar-sub" id="barSub">Follow the steps in order, 1 to 12</span>
         </div>
         <button type="button" class="btn primary" id="barBtn">Review &amp; confirm</button>
       </div>
@@ -1063,13 +1139,18 @@
         };
         var COLOR_HEX = { white: "#f5f5f2", black: "#17171a", navy: "#1d2c52", grey: "#828282", red: "#a81e23" };
         var PRODUCTS = {
-          tee: { label: "T-shirt", plural: "T-shirts", item: "shirt", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null },
-          polo: { label: "Polo", plural: "Polos", item: "polo", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null },
-          longsleeve: { label: "Long sleeve", plural: "Long sleeves", item: "long sleeve", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null },
-          hoodie: { label: "Hoodie", plural: "Hoodies", item: "hoodie", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null },
-          apron: { label: "Apron", plural: "Aprons", item: "apron", hasBack: false, oneSize: true, locs: { front: true, back: false, pocket: false }, sizesList: null },
-          hat: { label: "Hat", plural: "Hats", item: "hat", hasBack: false, oneSize: true, locs: { front: true, back: false, pocket: false }, sizesList: null }
+          tee: { label: "T-shirt", plural: "T-shirts", item: "shirt", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null, weightOz: 7 },
+          polo: { label: "Polo", plural: "Polos", item: "polo", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null, weightOz: 9 },
+          longsleeve: { label: "Long sleeve", plural: "Long sleeves", item: "long sleeve", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null, weightOz: 8 },
+          hoodie: { label: "Hoodie", plural: "Hoodies", item: "hoodie", hasBack: true, oneSize: false, locs: { front: true, back: true, pocket: true }, sizesList: null, weightOz: 14 },
+          apron: { label: "Apron", plural: "Aprons", item: "apron", hasBack: false, oneSize: true, locs: { front: true, back: false, pocket: false }, sizesList: null, weightOz: 10 },
+          hat: { label: "Hat", plural: "Hats", item: "hat", hasBack: false, oneSize: true, locs: { front: true, back: false, pocket: false }, sizesList: null, weightOz: 5 }
         };
+        /* Estimated garment weights (owner-approved estimates, in
+           ounces per item). Display only: the total order weight is
+           shown in the price area and in the design summary, but
+           weight never changes the price or the shipping cost —
+           shipping is still added later at Wix checkout. */
         /* Product catalog for the Product Manager (Shop settings,
            section G). The original five are built in: they can be
            hidden from the picker but not removed, so their photos,
@@ -1485,6 +1566,14 @@
           ownGarmentDetails: "",
           ownGarmentEmail: "",
           customerEmail: "",
+          custName: "",
+          custCompany: "",
+          custPhone: "",
+          custStreet: "",
+          custCity: "",
+          custState: "",
+          custZip: "",
+          payLinkPref: "",
           method: "screen",
           rushWanted: false,
           rushDate: "",
@@ -1667,6 +1756,16 @@
         var ownDetailsEl = document.getElementById("ownDetails");
         var ownEmailEl = document.getElementById("ownEmail");
         var customerEmailEl = document.getElementById("customerEmail");
+        var custNameEl = document.getElementById("custName");
+        var custCompanyEl = document.getElementById("custCompany");
+        var custEmailEl = document.getElementById("custEmail");
+        var custPhoneEl = document.getElementById("custPhone");
+        var custStreetEl = document.getElementById("custStreet");
+        var custCityEl = document.getElementById("custCity");
+        var custStateEl = document.getElementById("custState");
+        var custZipEl = document.getElementById("custZip");
+        var custInfoStatusEl = document.getElementById("custInfoStatus");
+        var payLinkSegEl = document.getElementById("payLinkSeg");
         var ownShipNoteEl = document.getElementById("ownShipNote");
         var ownStatus = document.getElementById("ownStatus");
         var agreeCheck = document.getElementById("agreeCheck");
@@ -2289,7 +2388,7 @@
               if (rushStatusEl && state.rushWanted) {
                 var hasDate = rushDateValid();
                 rushStatusEl.textContent = hasDate
-                  ? "✓ Rush — needed by " + state.rushDate + ". It’s in your design summary in step 11."
+                  ? "✓ Rush — needed by " + state.rushDate + ". It’s in your design summary in step 12."
                   : "Rush date required — pick the date you need it by. Copy and SEND QUOTE stay locked until you do.";
                 rushStatusEl.className = "own-status " + (hasDate ? "ok" : "wait");
               }
@@ -2344,16 +2443,16 @@
             var emailVal = (state.ownGarmentEmail || "").trim();
             var hasEmail = !!emailVal;
             if (hasDetails && hasEmail) {
-              ownStatus.textContent = "✓ Got it — printing only, no garment charge. Your garment details are in the design summary in step 11. After we receive your order, we’ll email you where to ship your garment at " + emailVal + ".";
+              ownStatus.textContent = "✓ Got it — printing only, no garment charge. Your garment details are in the design summary in step 12. After we receive your order, we’ll email you where to ship your garment at " + emailVal + ".";
               ownStatus.className = "own-status ok";
             } else if (hasDetails && !hasEmail) {
-              ownStatus.textContent = "Your garment details are in the design summary in step 11 — please add your email above so we can email you where to ship your garment after we receive your order. Shipping address to be emailed after order received.";
+              ownStatus.textContent = "Your garment details are in the design summary in step 12 — please add your email above so we can email you where to ship your garment after we receive your order. Shipping address to be emailed after order received.";
               ownStatus.className = "own-status wait";
             } else if (!hasDetails && hasEmail) {
-              ownStatus.textContent = "Thanks — after we receive your order, we’ll email you where to ship your garment at " + emailVal + ". Please also add a few details about your garment above — they’re included in your design summary in step 11.";
+              ownStatus.textContent = "Thanks — after we receive your order, we’ll email you where to ship your garment at " + emailVal + ". Please also add a few details about your garment above — they’re included in your design summary in step 12.";
               ownStatus.className = "own-status wait";
             } else {
-              ownStatus.textContent = "Please add a few details about your garment above and your email — they’re included in your design summary in step 11. After we receive your order, we’ll email you where to ship your garment. Shipping address to be emailed after order received.";
+              ownStatus.textContent = "Please add a few details about your garment above and your email — they’re included in your design summary in step 12. After we receive your order, we’ll email you where to ship your garment. Shipping address to be emailed after order received.";
               ownStatus.className = "own-status wait";
             }
           }
@@ -2385,6 +2484,19 @@
           var t = 0;
           ["S", "M", "L", "XL", "2XL"].forEach(function (k) { t += state.sizes[k] || 0; });
           return t;
+        }
+        function weightPerItemOz() {
+          var w = currentProduct().weightOz;
+          return (typeof w === "number" && w > 0) ? w : null;
+        }
+        function totalWeightOz() {
+          var w = weightPerItemOz();
+          return w == null ? null : w * totalQty();
+        }
+        function formatWeight(oz) {
+          var lb = Math.floor(oz / 16), rem = oz % 16;
+          if (lb === 0) return oz + " oz";
+          return rem === 0 ? lb + " lb" : lb + " lb " + rem + " oz";
         }
         function activeSizeKeys() {
           var prod = currentProduct();
@@ -2421,7 +2533,7 @@
              and meeting the minimum must be visible right here in
              step 8, not only as a total further down the page. It
              also names the one remaining lock: the step 10 agreement
-             tick is what unlocks Copy / SEND QUOTE in step 11. */
+             tick is what unlocks Copy / SEND QUOTE in step 12. */
           var minSuccess = document.getElementById("minSuccess");
           if (minSuccess) {
             if (t >= effMin) {
@@ -2433,13 +2545,15 @@
                       ? "That price uses the " + PLACEMENT_LABEL[priced.combo.assumedLoc] + " print picked in step 4 — add your artwork in step 2 to place the design. "
                       : "")
                   : "") +
-                (state.agreed && rushDateOk()
-                  ? "You’ve confirmed in step 10, so Copy and SEND QUOTE in step 11 are unlocked."
+                (state.agreed && rushDateOk() && customerEmailValid() && customerInfoComplete()
+                  ? "You’ve confirmed in step 10 and your information in step 11 is complete, so Copy and SEND QUOTE in step 12 are unlocked."
+                  : state.agreed && rushDateOk()
+                  ? "You’ve confirmed in step 10, so Copy is unlocked — SEND QUOTE in step 12 unlocks once your email and your information in step 11 are complete."
                   : state.agreed && !rushDateOk()
-                  ? "You’ve confirmed in step 10, but Copy and SEND QUOTE in step 11 stay locked until you pick your rush date — a rush date is required for rush orders."
+                  ? "You’ve confirmed in step 10, but Copy and SEND QUOTE in step 12 stay locked until you pick your rush date — a rush date is required for rush orders."
                   : !rushDateOk()
                   ? "Two steps left: tick the agreement in step 10 and pick your rush date — a rush date is required for rush orders."
-                  : "One step left: tick the agreement in step 10 — that unlocks Copy and SEND QUOTE in step 11.");
+                  : "Next: tick the agreement in step 10 — that unlocks Copy — then add your information in step 11 to unlock SEND QUOTE in step 12.");
               minSuccess.hidden = false;
             } else {
               minSuccess.hidden = true;
@@ -2620,10 +2734,18 @@
           if (state.rushWanted && rushSettings.enabled) {
             html += row("Rush order", rushDateValid() ? "Yes — needed by " + state.rushDate : "Yes — rush date required (not picked yet)");
           }
+          var perOz = weightPerItemOz();
+          if (perOz != null) {
+            html += row("Estimated weight per item", perOz + " oz");
+            var totOz = totalWeightOz();
+            if (totOz != null && r.qty > 0) {
+              html += row("Estimated total order weight", formatWeight(totOz) + " (" + totOz + " oz)");
+            }
+          }
           if (!r.complete) {
             html += '<div class="row grand"><span>Price per item</span><span>Not set yet</span></div>';
             html += '<p class="price-note" style="font-size:15px; font-weight:600; color:var(--ink);">Your <strong>' + r.missing.join(", ") +
-              '</strong> is priced by the shop — email your design summary in step 11 to <strong>oneonegraphics@gmail.com</strong> for your exact price. No price is guessed on this page.</p>';
+              '</strong> is priced by the shop — email your design summary in step 12 to <strong>oneonegraphics@gmail.com</strong> for your exact price. No price is guessed on this page.</p>';
             html += '<a class="price-settings-link" href="mailto:oneonegraphics@gmail.com?subject=Custom%20design%20order%20-%20quote%20request">Email oneonegraphics@gmail.com for your quote</a>';
             priceBox.innerHTML = html;
             return;
@@ -2684,7 +2806,7 @@
         }
         /* Exact uploaded logo file names ("Front: name.png", …) for
            the current design — used by the summary's file notes and
-           by the Step 11 status messages, so the precise file(s)
+           by the Step 12 status messages, so the precise file(s)
            included with the quote are named. */
         function uploadedLogoNames() {
           var names = [];
@@ -2728,7 +2850,21 @@
           lines.push("");
           lines = lines.concat(attachReminderLines(logoFileNames));
           sectionHead(lines, "CUSTOMER");
+          lines.push("Customer name: " + ((state.custName || "").trim() ? state.custName.trim() : "not provided yet"));
+          if ((state.custCompany || "").trim()) lines.push("Company name: " + state.custCompany.trim());
           lines.push("Customer email: " + (effectiveCustomerEmail() ? effectiveCustomerEmail() : "customer email not provided yet"));
+          lines.push("Customer phone: " + ((state.custPhone || "").trim() ? state.custPhone.trim() : "not provided yet"));
+          var shipParts = [state.custStreet, state.custCity, state.custState, state.custZip].map(function (v) { return (v || "").trim(); }).filter(function (v) { return v; });
+          lines.push("Shipping address: " + (shipParts.length === 4
+            ? state.custStreet.trim() + ", " + state.custCity.trim() + ", " + state.custState.trim() + " " + state.custZip.trim()
+            : "not provided yet"));
+          if (state.payLinkPref === "email") {
+            lines.push("Payment link: send by EMAIL to " + (effectiveCustomerEmail() ? effectiveCustomerEmail() : "customer email not provided yet"));
+          } else if (state.payLinkPref === "text") {
+            lines.push("Payment link: send by TEXT to " + ((state.custPhone || "").trim() ? state.custPhone.trim() : "customer phone not provided yet"));
+          } else {
+            lines.push("Payment link: customer has not picked email or text yet");
+          }
           sectionHead(lines, "PRODUCT");
           lines.push("Product: " + currentProduct().label + (isManaged(state.product)
             ? (MANAGED_PRODUCTS[state.product].front || MANAGED_PRODUCTS[state.product].back ? " (your photo)" : " (placeholder preview — no photo added yet)")
@@ -2772,6 +2908,12 @@
           sizeKeys.forEach(function (k) { if (state.sizes[k] > 0) parts.push(k + " × " + state.sizes[k]); });
           lines.push((currentProduct().oneSize ? "Quantity: " : "Sizes: ") + (parts.length ? parts.join(", ") : "none entered yet"));
           lines.push("Total quantity: " + totalQty() + " " + (totalQty() === 1 ? currentProduct().item : currentProduct().plural.toLowerCase()));
+          var sumPerOz = weightPerItemOz();
+          if (sumPerOz != null) {
+            var sumTotOz = totalWeightOz();
+            lines.push("Estimated weight per item: " + sumPerOz + " oz");
+            lines.push("Estimated total weight: " + formatWeight(sumTotOz) + " (" + sumTotOz + " oz total)");
+          }
           lines.push("Order type: Bulk " + METHOD_LABEL[state.method].toLowerCase() + " order (minimum " + effectiveMinQty() + " " + currentProduct().plural.toLowerCase() + ", no samples)");
           sectionHead(lines, "RUSH & TURNAROUND");
           if ((bizInfo.turnaround || "").trim()) lines.push("Turnaround: " + bizInfo.turnaround.trim());
@@ -2853,9 +2995,9 @@
           if (!state.rushWanted || !rushSettings.enabled) return true;
           return rushDateValid();
         }
-        /* Customer email (step 11): required before SEND QUOTE
+        /* Customer email (step 12): required before SEND QUOTE
            unlocks, so the shop always has an address to reply to.
-           The step 9 own-garment email and the step 11 email are kept
+           The step 9 own-garment email and the step 12 email are kept
            in sync — either one counts as the customer's email. */
         function effectiveCustomerEmail() {
           return (state.customerEmail || "").trim() || (state.ownGarmentEmail || "").trim();
@@ -2863,6 +3005,20 @@
         function customerEmailValid() {
           var v = effectiveCustomerEmail();
           return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+        }
+        /* Customer information (step 11): name, email, phone and the
+           full shipping address, plus a payment-link choice (email
+           or text), are all required before SEND QUOTE unlocks.
+           Company name is optional and never blocks sending. */
+        function customerInfoComplete() {
+          return !!(state.custName || "").trim()
+            && customerEmailValid()
+            && !!(state.custPhone || "").trim()
+            && !!(state.custStreet || "").trim()
+            && !!(state.custCity || "").trim()
+            && !!(state.custState || "").trim()
+            && !!(state.custZip || "").trim()
+            && (state.payLinkPref === "email" || state.payLinkPref === "text");
         }
         function renderAgreement() {
           if (!agreeRecap || !agreeCheck) return;
@@ -2894,11 +3050,12 @@
           var rushOk = rushDateOk();
           /* Copy keeps its original gate (agreement + rush date).
              SEND QUOTE additionally needs a valid customer email
-             from step 11. */
+             from step 12. */
           var copyOk = !!state.agreed && rushOk;
           var emailOk = customerEmailValid();
-          var saveOk = copyOk && emailOk;
-          /* Customer email field (step 11): keep the box in sync with
+          var infoOk = customerInfoComplete();
+          var saveOk = copyOk && emailOk && infoOk;
+          /* Customer email field (step 12): keep the box in sync with
              state (the step 9 own-garment email fills it too) and say
              plainly whether it counts yet. */
           if (customerEmailEl && document.activeElement !== customerEmailEl) {
@@ -2919,6 +3076,36 @@
             }
           }
           if (customerEmailEl) customerEmailEl.setAttribute("aria-invalid", emailOk || !effectiveCustomerEmail() ? "false" : "true");
+          /* Step 11 customer information: the email box there is the
+             same email as the step 12 box — keep it in sync — and
+             say plainly whether the information is complete yet. */
+          if (custEmailEl && document.activeElement !== custEmailEl) {
+            custEmailEl.value = effectiveCustomerEmail();
+          }
+          if (custEmailEl) custEmailEl.setAttribute("aria-invalid", emailOk || !effectiveCustomerEmail() ? "false" : "true");
+          if (payLinkSegEl) {
+            payLinkSegEl.querySelectorAll("[data-paylink]").forEach(function (b) {
+              b.setAttribute("aria-pressed", b.getAttribute("data-paylink") === state.payLinkPref ? "true" : "false");
+            });
+          }
+          if (custInfoStatusEl) {
+            if (infoOk) {
+              custInfoStatusEl.textContent = "✓ Got it — your information is complete. We’ll send your payment link by " + (state.payLinkPref === "text" ? "text to " + state.custPhone.trim() : "email to " + effectiveCustomerEmail()) + ".";
+              custInfoStatusEl.className = "info-status ok";
+            } else {
+              var missing = [];
+              if (!(state.custName || "").trim()) missing.push("your full name");
+              if (!emailOk) missing.push("a valid email");
+              if (!(state.custPhone || "").trim()) missing.push("your phone number");
+              if (!(state.custStreet || "").trim()) missing.push("your street address");
+              if (!(state.custCity || "").trim()) missing.push("your city");
+              if (!(state.custState || "").trim()) missing.push("your state");
+              if (!(state.custZip || "").trim()) missing.push("your ZIP code");
+              if (state.payLinkPref !== "email" && state.payLinkPref !== "text") missing.push("how to send your payment link (Email or Text)");
+              custInfoStatusEl.textContent = "Still needed: " + missing.join(", ") + ". SEND QUOTE in step 12 stays locked until your information is complete.";
+              custInfoStatusEl.className = "info-status wait";
+            }
+          }
           if (state.agreed && !rushOk) {
             agreeStatus.textContent = "✓ Confirmed — but a rush date is required for your rush order before you can copy or send your quote. Pick your rush date in the rush box above your price.";
             agreeStatus.className = "agree-status wait";
@@ -2935,7 +3122,7 @@
           }
 
           /* Say WHY Copy / SEND QUOTE are greyed, right beside them in
-             step 11 — otherwise meeting the minimum in step 8 looks
+             step 12 — otherwise meeting the minimum in step 8 looks
              like nothing happened when the buttons stay locked. */
           var saveGateMsg = document.getElementById("saveGateMsg");
           if (saveGateMsg) {
@@ -2948,10 +3135,13 @@
                 : "Copy and SEND QUOTE unlock as soon as you tick the agreement box in step 10 and pick your rush date — a rush date is required for rush orders.";
               saveGateMsg.className = "pay-gate";
             } else if (state.agreed && !emailOk) {
-              saveGateMsg.textContent = "✓ Confirmed — Copy is unlocked. SEND QUOTE stays locked until you enter a valid email address in the “Your email” box above, so we can reply to you.";
+              saveGateMsg.textContent = "✓ Confirmed — Copy is unlocked. SEND QUOTE stays locked until you enter a valid email address in step 11 or in the “Your email” box above, so we can reply to you.";
+              saveGateMsg.className = "pay-gate";
+            } else if (state.agreed && !infoOk) {
+              saveGateMsg.textContent = "✓ Confirmed — Copy is unlocked. SEND QUOTE stays locked until you complete your information in step 11 — name, phone, shipping address, and how to send your payment link (Email or Text).";
               saveGateMsg.className = "pay-gate";
             } else {
-              saveGateMsg.textContent = "Copy and SEND QUOTE unlock as soon as you tick the agreement box in step 10 and enter your email above" +
+              saveGateMsg.textContent = "Copy and SEND QUOTE unlock as soon as you tick the agreement box in step 10, add your information in step 11, and enter your email" +
                 (qty >= effectiveMinQty()
                   ? " — your quantity already meets the " + effectiveMinQty() + "-item minimum."
                   : ".");
@@ -3217,6 +3407,60 @@
             renderAgreement();
           });
         }
+        /* Step 11 customer information fields: each keystroke goes
+           into state, refreshes the live summary, and re-checks the
+           SEND QUOTE gate. The step 11 email is the SAME email as
+           the step 12 "Your email" box — one value, two boxes. */
+        [
+          [custNameEl, "custName"], [custCompanyEl, "custCompany"],
+          [custPhoneEl, "custPhone"], [custStreetEl, "custStreet"],
+          [custCityEl, "custCity"], [custStateEl, "custState"], [custZipEl, "custZip"]
+        ].forEach(function (pair) {
+          var el = pair[0], key = pair[1];
+          if (!el) return;
+          el.addEventListener("input", function () {
+            state[key] = el.value;
+            hideQuoteSentConfirmation();
+            renderSummary();
+            renderAgreement();
+          });
+        });
+        if (custEmailEl) {
+          custEmailEl.addEventListener("input", function () {
+            state.customerEmail = custEmailEl.value;
+            if (state.ownGarment) state.ownGarmentEmail = custEmailEl.value;
+            hideQuoteSentConfirmation();
+            renderSummary();
+            renderAgreement();
+          });
+        }
+        if (payLinkSegEl) {
+          payLinkSegEl.querySelectorAll("[data-paylink]").forEach(function (b) {
+            b.addEventListener("click", function () {
+              state.payLinkPref = b.getAttribute("data-paylink");
+              hideQuoteSentConfirmation();
+              renderSummary();
+              renderAgreement();
+            });
+          });
+        }
+        /* Next buttons: step 10 → step 11 (Your information), and
+           step 11 → step 12 (Send your quote). Plain scrolls — the
+           steps are all on this one page, in order. */
+        var agreeNextBtnEl = document.getElementById("agreeNextBtn");
+        if (agreeNextBtnEl) {
+          agreeNextBtnEl.addEventListener("click", function () {
+            var t = document.getElementById("sec-info");
+            if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+        var infoNextBtnEl = document.getElementById("infoNextBtn");
+        if (infoNextBtnEl) {
+          infoNextBtnEl.addEventListener("click", function () {
+            var t = document.getElementById("sec-save");
+            if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
         function hideQuoteSentConfirmation() {
           var conf = document.getElementById("quoteSentConfirmation");
           if (conf) conf.hidden = true;
@@ -3398,7 +3642,7 @@
           } else { done(false); }
         });
 
-        /* ---------- Send design summary (Step 11) ---------- */
+        /* ---------- Send design summary (Step 12) ---------- */
         /* SEND QUOTE is a plain <button>, not a link: it has no
            href and no target, so tapping it can never open Gmail,
            an email app, or any other tab. It posts the quote
@@ -3444,7 +3688,7 @@
           if (state.originalFile) files.push(state.originalFile);
           return files;
         }
-        /* ---------- Rendered design preview (Step 11) ----------
+        /* ---------- Rendered design preview (Step 12) ----------
            One PNG of the design as the customer sees it: the garment
            photo for the side, centred on the white stage exactly as
            the stage shows it (the stage is 3:2 and the photo sits
@@ -3540,14 +3784,19 @@
           emailSummaryBtnEl.addEventListener("click", function (e) {
             e.preventDefault();
             if (quoteSending) return;
-            if (!state.agreed || !rushDateOk() || !customerEmailValid()) {
+            if (!state.agreed || !rushDateOk() || !customerEmailValid() || !customerInfoComplete()) {
               if (emailMsgEl && !rushDateOk()) {
                 emailMsgEl.textContent = "Rush date required — pick the date you need it by in the rush box above your price before emailing your design.";
                 emailMsgEl.className = "pay-gate";
               } else if (emailMsgEl && !customerEmailValid()) {
-                emailMsgEl.textContent = "Your email is required — please enter a valid email address in the “Your email” box above so we can reply to you.";
+                emailMsgEl.textContent = "Your email is required — please enter a valid email address in step 11 or in the “Your email” box above so we can reply to you.";
                 emailMsgEl.className = "pay-gate";
                 if (customerEmailEl) { try { customerEmailEl.focus({ preventScroll: false }); } catch (err) { customerEmailEl.focus(); } }
+              } else if (emailMsgEl && !customerInfoComplete()) {
+                emailMsgEl.textContent = "Your information is required — please fill in step 11 (name, phone, shipping address, and how to send your payment link) before sending your quote.";
+                emailMsgEl.className = "pay-gate";
+                var infoSec = document.getElementById("sec-info");
+                if (infoSec) infoSec.scrollIntoView({ behavior: "smooth", block: "start" });
               }
               return;
             }
@@ -3683,7 +3932,7 @@
           var qtyOk = totalQty() >= effectiveMinQty();
           var doneMap = {
             "1": true, "2": placed, "3": true, "4": placed, "5": true,
-            "6": placed, "7": true, "8": qtyOk, "9": !!state.ownGarment, "10": !!state.agreed, "11": false
+            "6": placed, "7": true, "8": qtyOk, "9": !!state.ownGarment, "10": !!state.agreed, "11": customerInfoComplete(), "12": false
           };
           document.querySelectorAll("[data-pstep]").forEach(function (chip) {
             var n = chip.getAttribute("data-pstep");
@@ -3715,7 +3964,7 @@
           }
           barMain.textContent = main;
           if (barSub) barSub.textContent = sub;
-          if (barBtn) barBtn.textContent = state.agreed && rushDateOk() && customerEmailValid() ? "SEND QUOTE" : state.agreed && !rushDateOk() ? "Add rush date" : state.agreed && rushDateOk() && !customerEmailValid() ? "Add your email" : "Review & confirm";
+          if (barBtn) barBtn.textContent = state.agreed && rushDateOk() && customerEmailValid() && customerInfoComplete() ? "SEND QUOTE" : state.agreed && !rushDateOk() ? "Add rush date" : state.agreed && rushDateOk() && !customerEmailValid() ? "Add your email" : state.agreed && rushDateOk() ? "Add your information" : "Review & confirm";
         }
         var barBtnEl = document.getElementById("barBtn");
         if (barBtnEl) {
@@ -3725,6 +3974,9 @@
               var saveSec = document.getElementById("sec-save");
               if (saveSec) saveSec.scrollIntoView({ behavior: "smooth", block: "start" });
               if (emailTarget) { try { emailTarget.focus({ preventScroll: true }); } catch (err) { emailTarget.focus(); } }
+            } else if (state.agreed && rushDateOk() && customerEmailValid() && !customerInfoComplete()) {
+              var infoTarget = document.getElementById("sec-info");
+              if (infoTarget) infoTarget.scrollIntoView({ behavior: "smooth", block: "start" });
             } else if (state.agreed && rushDateOk()) {
               var sendTarget = document.getElementById("sec-save");
               if (sendTarget) sendTarget.scrollIntoView({ behavior: "smooth", block: "start" });
