@@ -1,0 +1,27 @@
+name: Rename prototype to index
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rename-to-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace index.html with shirt-prototype.html
+        run: |
+          mv shirt-prototype.html index.html
+          rm .github/workflows/rename-to-index.yml
+      - name: Commit replacement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace index.html with new shirt designer" || echo "Nothing to commit"
+          git push
