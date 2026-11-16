@@ -4663,12 +4663,19 @@
            open and then died, and no quote was ever sent. The
            sends that worked (the owner's earlier tests, the live
            GitHub page) all ran with NO pre-opened tab.
-           So now: nothing opens while the quote sends or while
+           So: nothing opens while the quote sends or while
            the pay link is created — this page stays in front and
-           active the whole time. When the Worker returns a Wix
-           checkout URL it is stored in checkoutUrl and shown on
-           the thank-you screen as a REAL link (payNowLink, an
-           <a target="_blank"> the customer taps themselves).
+           active the whole time. Once the Worker returns a Wix
+           checkout URL from the GO TO CHECKOUT flow, the page
+           navigates straight to it in the SAME tab
+           (same-tab navigation in attemptCheckoutRedirect) —
+           no window.open, no new tab, no popup, and the
+           thank-you screen is skipped on success. The thank-you
+           screen only appears when a checkout link could not
+           be made (or navigation itself failed); there, a
+           checkout URL obtained via its Pay now retry is stored
+           in checkoutUrl and shown as a REAL link (payNowLink,
+           an <a target="_blank"> the customer taps themselves).
            A customer's own tap on a real link is never treated
            as a popup, opens reliably in in-app browsers, and
            cannot be "closed" by this page — no flicker, no
@@ -5255,8 +5262,11 @@
                the customer saw — a checkout "about to open" that
                then died. This page now stays in front and active
                for the whole send, exactly as it did in the tests
-               that arrived. The checkout opens later, from a real
-               link on the thank-you screen (setCheckoutReady). */
+               that arrived. Only AFTER the send succeeds and the
+               pay link is created does the page navigate — in
+               the same tab, straight to Wix checkout (see
+               attemptCheckoutRedirect); the thank-you screen
+               appears only if the link cannot be made. */
             emailSummaryBtnEl.classList.add("is-disabled");
             emailSummaryBtnEl.setAttribute("aria-disabled", "true");
             if (emailMsgEl) {
@@ -5313,13 +5323,17 @@
                thank-you screen's Pay now button makes (same Worker
                URL, same JSON payload from buildPayNowPayload() —
                same order, same exact designer total). On success
-               the thank-you screen shows with the returned Wix
-               checkout URL as a real link the customer taps to
-               open it (setCheckoutReady — no window is opened by
-               code, so nothing can flicker or be closed again).
-               On ANY failure the thank-you screen
-               shows instead, with its fallback line visible, and
-               its Pay now button stays as the retry —
+               the customer goes STRAIGHT to the returned Wix
+               checkout URL in the SAME tab (same-tab navigation —
+               not window.open, no new tab, no popup, no blank tab
+               opened during the send), skipping the thank-you
+               screen entirely with no extra tap. Only if that
+               navigation itself throws does the thank-you screen
+               show as a fallback, with the checkout URL as its
+               real link (setCheckoutReady). On ANY failure to
+               create the link the thank-you screen shows instead,
+               with its fallback line visible, and its Pay now
+               button stays as the retry —
                showQuoteSentNotice() rebuilds and stores the same
                payload for it, so the retry sends the same order. */
             function checkoutFailed() {
@@ -5349,8 +5363,23 @@
                   res.json().then(function (data) {
                     if (res.ok && data && typeof data.url === "string" && data.url) {
                       checkoutInFlight = false;
-                      showQuoteSentNotice();
-                      setCheckoutReady(data.url);
+                      if (emailMsgEl) {
+                        emailMsgEl.textContent = "Your quote was sent — taking you to checkout…";
+                        emailMsgEl.className = "pay-gate ok";
+                      }
+                      /* Go straight to Wix checkout in the SAME
+                         tab — skip the thank-you screen on
+                         success, no extra tap, no new tab, no
+                         popup. This runs only AFTER the quote
+                         has been sent and the pay link created,
+                         so it cannot disturb the send the way the
+                         old pre-opened blank tab did. */
+                      try {
+                        window.location.assign(data.url);
+                      } catch (navErr) {
+                        showQuoteSentNotice();
+                        setCheckoutReady(data.url);
+                      }
                     } else {
                       /* The customer only ever sees the plain
                          fallback on the thank-you screen, but the
