@@ -6286,7 +6286,7 @@
               emailSummaryBtnEl.classList.add("is-disabled");
               emailSummaryBtnEl.setAttribute("aria-disabled", "true");
               if (emailMsgEl) {
-                emailMsgEl.textContent = "Your quote was sent — getting your checkout…";
+                emailMsgEl.textContent = "Getting your checkout ready…";
                 emailMsgEl.className = "pay-gate ok";
               }
               try {
@@ -6300,7 +6300,7 @@
                     if (res.ok && data && typeof data.url === "string" && data.url) {
                       checkoutInFlight = false;
                       if (emailMsgEl) {
-                        emailMsgEl.textContent = "Your quote was sent — taking you to checkout…";
+                        emailMsgEl.textContent = "Getting your checkout ready…";
                         emailMsgEl.className = "pay-gate ok";
                       }
                       /* Go straight to Wix checkout in the SAME
@@ -7350,8 +7350,7 @@
           "Your files add up to more than 24 MB, so they are too big to send with your quote this way. Please upload smaller copies of your files and tap GO TO CHECKOUT again.": "Tus archivos suman más de 24 MB, así que son demasiado grandes para enviarlos con tu cotización de esta manera. Sube copias más pequeñas de tus archivos y toca IR A PAGAR de nuevo.",
           "Sending your quote…": "Enviando tu cotización…",
           "Sorry — your quote could not be sent just now. Nothing was lost: your design and details are still here. Please tap GO TO CHECKOUT to try again.": "Lo sentimos — tu cotización no se pudo enviar en este momento. No se perdió nada: tu diseño y tus datos siguen aquí. Toca IR A PAGAR para intentarlo de nuevo.",
-          "Your quote was sent — getting your checkout…": "Tu cotización fue enviada — preparando tu pago…",
-          "Your quote was sent — taking you to checkout…": "Tu cotización fue enviada — llevándote a pagar…",
+          "Getting your checkout ready…": "Preparando tu pago…",
           "Your quote could not be sent from inside this app": "Tu cotización no se pudo enviar desde esta aplicación",
           "The send was interrupted before it left this app’s built-in browser, so One Graphics did not receive it — and nothing was charged. Your design and details are still on this page. Try again, or send it another way:": "El envío se interrumpió antes de salir del navegador integrado de esta aplicación, así que One Graphics no lo recibió — y no se hizo ningún cargo. Tu diseño y tus datos siguen en esta página. Inténtalo de nuevo, o envíalo de otra manera:",
           "Try sending again": "Intentar enviar de nuevo",
