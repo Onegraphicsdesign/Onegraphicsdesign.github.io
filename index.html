@@ -381,7 +381,74 @@
          colour at the sides instead of being zoomed in and cut off at
          the top and bottom, so the design shows at its true scale
          against the full garment. */
+      .stage { cursor: zoom-in; }
       .stage img.shirt { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
+      /* Enlarge affordance on the shirt view: a small pill in the
+         top-right corner, clear of the photo badge (top-left) and
+         the Upload button (bottom centre). It is the discoverable
+         way into the big view — tapping the shirt itself also opens
+         it (see the tap-vs-drag logic in the script). */
+      .stage-enlarge-btn {
+        position: absolute; top: 10px; right: 10px; z-index: 7;
+        appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        border: 1.5px solid var(--line); background: rgba(255,255,255,0.94); color: var(--ink);
+        font: inherit; font-size: 13px; font-weight: 700; line-height: 1;
+        padding: 8px 11px; border-radius: 999px; min-height: 36px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      }
+      .stage-enlarge-btn svg { width: 15px; height: 15px; flex: none; }
+      .stage-enlarge-btn:hover, .stage-enlarge-btn:focus-visible { border-color: var(--accent); color: var(--accent); }
+      /* ——— Click-to-enlarge overlay ———
+         Full-screen big view of the shirt: a deep-cloned copy of
+         the stage (same photo, same print area, same artwork at
+         the same % position/size, so the logo sits exactly as
+         placed) shown as large as the screen allows. It is a
+         snapshot only — nothing inside it is editable, dragging
+         is not wired there, and closing it changes no state. */
+      .enlarge-overlay {
+        position: fixed; inset: 0; z-index: 200;
+        background: rgba(23,20,15,0.94);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 14px; padding: 64px 16px 20px;
+        overflow-y: auto;
+      }
+      .enlarge-overlay[hidden] { display: none !important; }
+      .enlarge-close {
+        position: absolute; top: 12px; right: 12px; z-index: 2;
+        appearance: none; cursor: pointer; width: 48px; height: 48px;
+        border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.55);
+        background: rgba(255,255,255,0.12); color: #ffffff;
+        font: inherit; font-size: 26px; font-weight: 700; line-height: 1;
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+      .enlarge-close:hover, .enlarge-close:focus-visible { background: #ffffff; color: var(--ink); }
+      .enlarge-title {
+        margin: 0; color: #ffffff; font-size: 16px; font-weight: 700;
+        text-align: center; line-height: 1.4; max-width: 90vw;
+      }
+      .enlarge-holder {
+        /* Sized so the cloned stage keeps its exact 3:2 ratio AND
+           fits the screen height: whichever of the width cap or
+           the height-derived width is smaller wins. */
+        width: min(96vw, 1080px, calc((100vh - 180px) * 1.5));
+        width: min(96vw, 1080px, calc((100dvh - 180px) * 1.5));
+        display: flex; justify-content: center;
+      }
+      .enlarge-holder .stage {
+        cursor: default; width: 100%;
+        box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+      }
+      /* Inside the big view nothing is interactive: no upload, no
+         resize handle, no grab cursor on the artwork. */
+      .enlarge-holder .stage-upload-btn,
+      .enlarge-holder .stage-enlarge-btn,
+      .enlarge-holder .handle { display: none !important; }
+      .enlarge-holder .artwork { cursor: default; }
+      .enlarge-hint { margin: 0; color: rgba(255,255,255,0.78); font-size: 13.5px; font-weight: 600; text-align: center; }
+      @media (max-width: 480px) {
+        .enlarge-overlay { padding: 60px 10px 16px; gap: 10px; }
+        .stage-enlarge-btn { font-size: 12px; padding: 7px 9px; min-height: 34px; }
+      }
       .product-placeholder {
         position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 6px; background: var(--stage); pointer-events: none;
@@ -1325,6 +1392,10 @@
                  the script hides it once a logo is uploaded there
                  and shows it again when the logo is removed. -->
             <button type="button" class="stage-upload-btn" id="stageUploadBtn" aria-label="Upload the Front logo">Upload Front logo</button>
+            <button type="button" class="stage-enlarge-btn" id="stageEnlargeBtn" aria-label="Enlarge the shirt preview to see your logo bigger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 4 4 4 9M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
+              Enlarge
+            </button>
           </div><!-- /.stage -->
           <!-- Location pills: one row DIRECTLY under the shirt view,
                styled exactly like the print-method segment in step 1
@@ -1371,7 +1442,7 @@
               <button type="button" data-printsize="standard" aria-pressed="true">Standard — up to 12″ × 16″</button>
               <button type="button" data-printsize="oversize" aria-pressed="false">Oversize — up to 14″ × 17″</button>
             </div>
-            <p class="seg-note" id="printSizeNote">Pocket prints are up to 4″ × 4″.</p>
+            <p class="seg-note" id="printSizeNote">Pocket prints are up to 4.5″ × 4.5″.</p>
           </div><!-- /.print-size-under -->
           <!-- The "Your logo" detail/info box that used to sit here
                (placement note + selected location's print area /
@@ -1407,7 +1478,7 @@
               </div>
           </div><!-- /.side-panel-logo -->
           </div><!-- /.stage-row -->
-          <p class="stage-caption"><strong>Drag</strong> your artwork to move it. <strong>Drag the gold corner dot</strong> to make it bigger or smaller. The label above the artwork shows its exact print size <strong>in inches</strong> — that’s the size that will print. It always stays inside the dashed print area. <strong>The preview stays at the top while you scroll — and the step numbers under it travel with it</strong>, so you can watch every change as you work through the steps below.</p>
+          <p class="stage-caption"><strong>Drag</strong> your artwork to move it. <strong>Drag the gold corner dot</strong> to make it bigger or smaller. The label above the artwork shows its exact print size <strong>in inches</strong> — that’s the size that will print. It always stays inside the dashed print area. <strong>Tap the shirt</strong> (or the Enlarge button on it) to see it bigger and check your logo up close. <strong>The preview stays at the top while you scroll — and the step numbers under it travel with it</strong>, so you can watch every change as you work through the steps below.</p>
           <!-- Step tracker (numbers with check marks): lives directly
                UNDER the "Drag your artwork..." caption paragraph above,
                inside the same sticky unit — never overlaid on the shirt,
@@ -1417,7 +1488,7 @@
                jumps to that step. -->
           <nav class="progress" aria-label="Design steps — tap a step to jump to it">
             <a class="pstep" data-pstep="1" href="#sec-method"><span class="pnum">1</span>Print method</a>
-            <a class="pstep" data-pstep="2" href="#sec-product"><span class="pnum">2</span>Item</a>
+            <a class="pstep" data-pstep="2" href="#sec-product"><span class="pnum">2</span>Product</a>
             <a class="pstep" data-pstep="3" href="#sec-qty"><span class="pnum">3</span>Quantities</a>
             <a class="pstep" data-pstep="4" href="#sec-own"><span class="pnum">4</span>Own garment</a>
             <a class="pstep" data-pstep="5" href="#sec-info"><span class="pnum">5</span>Your information</a>
@@ -1695,6 +1766,17 @@
 
     </main>
 
+    <!-- Click-to-enlarge overlay: filled by the script with a
+         snapshot clone of the shirt stage when it opens. Tap
+         outside the big shirt or the × to close and go back to
+         designing — nothing about the design changes. -->
+    <div class="enlarge-overlay" id="enlargeOverlay" role="dialog" aria-modal="true" aria-labelledby="enlargeTitle" hidden>
+      <button type="button" class="enlarge-close" id="enlargeClose" aria-label="Close the enlarged view and go back to designing">×</button>
+      <p class="enlarge-title" id="enlargeTitle">Your design — enlarged</p>
+      <div class="enlarge-holder" id="enlargeHolder"></div>
+      <p class="enlarge-hint">Tap outside the shirt or the × to go back to designing.</p>
+    </div>
+
     <section class="thank-you-screen" id="thankYouScreen" aria-labelledby="thankYouTitle" hidden>
       <div class="thank-you-inner">
         <a class="thank-you-logo-link" href="https://www.onegraphicsdesign.com" aria-label="One Graphics Design — back to onegraphicsdesign.com">
@@ -1881,7 +1963,12 @@
            is showing, so the dashed area always sits on the pocket
            itself. */
         var APRON_AREAS = {
-          front: { cx: 0.50, cy: 0.37, fw: 0.17, fh: 0.14, maxW: 4, maxH: 4 }
+          /* maxW/maxH follow the pocket print size — 4.5″ × 4.5″
+             since 2026-11-16 (was 4″ × 4″). The box itself is the
+             physical pocket in the photo (fw/fh), so it does not
+             grow: it already sits exactly on the pocket and never
+             extends past it. */
+          front: { cx: 0.50, cy: 0.37, fw: 0.17, fh: 0.14, maxW: 4.5, maxH: 4.5 }
         };
         function apronArea(placement) {
           var spec = APRON_AREAS[placement] || APRON_AREAS.front;
@@ -1978,7 +2065,12 @@
             standard: { cx: 0.50, cy: 0.5375, fw: 0.46, fh: 0.325, maxW: 12, maxH: 16 },
             oversize: { cx: 0.50, cy: 0.5525, fw: 0.52, fh: 0.375, maxW: 14, maxH: 17 }
           },
-          pocket: { fixed: { cx: 0.635, cy: 0.40, fw: 0.21, fh: 0.085, maxW: 4, maxH: 4 } }
+          /* Pocket grown to 4.5″ × 4.5″ (owner, 2026-11-16; was
+             4″ × 4″): fw/fh scaled by 4.5/4 around the same centre,
+             so the box spans photo x 0.517–0.753 — still inside the
+             front torso (0.215–0.782) and clear of the kangaroo
+             pocket below. */
+          pocket: { fixed: { cx: 0.635, cy: 0.40, fw: 0.23625, fh: 0.095625, maxW: 4.5, maxH: 4.5 } }
         };
         function hoodieArea(placement, printSize) {
           var side = placement === "back" ? "back" : "front";
@@ -2041,17 +2133,21 @@
            and spilled past the chest toward the sleeve. This box is a
            fraction of the polo PHOTO (cx/cy = centre, fw/fh = size):
            the button placket sits at photo x ≈0.50 and the chest
-           spans photo x ≈0.285–0.715, so the pocket box at photo
-           x ≈0.531–0.689 sits on the left chest pocket, tucked toward
-           the centre of the chest and fully on the chest — well clear
-           of the sleeve on both sides. Its stage size works out to
-           exactly the shared pocket box's 10.5% × 12.5% of the stage,
-           so it stays a 4″ × 4″ pocket print at the regular pocket
-           fee — only the position is fitted to the polo.
+           spans photo x ≈0.285–0.715, so the pocket box sits on the
+           left chest pocket, tucked toward the centre of the chest
+           and fully on the chest — well clear of the sleeve on both
+           sides. Its stage size works out to
+           exactly the shared pocket box's 11.8125% × 14.0625% of
+           the stage, so it stays a 4.5″ × 4.5″ pocket print at the
+           regular pocket fee — only the position is fitted to the
+           polo. Grown to 4.5″ (owner, 2026-11-16; was 4″ × 4″) by
+           scaling fw/fh by 4.5/4 around the same centre: the box
+           now spans photo x ≈0.521–0.699, still on the chest
+           (0.285–0.715) and clear of the sleeve.
            poloPocketArea() converts it to stage % for the photo
            showing, like the other fitted areas. */
         var POLO_FRONT_ASPECT = 1; /* the polo front photos are 1440×1440 */
-        var POLO_POCKET_AREA = { cx: 0.61, cy: 0.30, fw: 0.1575, fh: 0.125, maxW: 4, maxH: 4 };
+        var POLO_POCKET_AREA = { cx: 0.61, cy: 0.30, fw: 0.1771875, fh: 0.140625, maxW: 4.5, maxH: 4.5 };
         function poloPocketArea() {
           var spec = POLO_POCKET_AREA;
           var ap = POLO_FRONT_ASPECT;
@@ -2168,7 +2264,12 @@
             oversize: { x: 32.5, y: 19.5, w: 35, h: 53.125, maxW: 14, maxH: 17 }
           },
           pocket: {
-            fixed: { x: 55.5, y: 25, w: 10.5, h: 12.5, maxW: 4, maxH: 4 }
+            /* 4.5″ × 4.5″ (owner, 2026-11-16; was 4″ × 4″): the old
+               box grown by 4.5/4 around the SAME centre (60.75, 31.25),
+               so it stays on the left chest — right edge at 66.66% of
+               the stage, still inside the garment (the Oversize front
+               area already spans to 67.5% on the same photo). */
+            fixed: { x: 54.84375, y: 24.21875, w: 11.8125, h: 14.0625, maxW: 4.5, maxH: 4.5 }
           }
         };
         var PLACEMENT_LABEL = { front: "Front", back: "Back", pocket: "Pocket" };
@@ -2359,7 +2460,7 @@
            { productId: { standard|oversize|pocket: { w, h } } } —
            either dimension may be null (= built-in size). */
         var areaOverrides = {};
-        var AREA_DEFAULTS = { standard: { w: 12, h: 16 }, oversize: { w: 14, h: 17 }, pocket: { w: 4, h: 4 } };
+        var AREA_DEFAULTS = { standard: { w: 12, h: 16 }, oversize: { w: 14, h: 17 }, pocket: { w: 4.5, h: 4.5 } };
         function areaDims(productId, slot) {
           var def = AREA_DEFAULTS[slot] || AREA_DEFAULTS.standard;
           var ov = areaOverrides[productId] && areaOverrides[productId][slot];
@@ -3215,7 +3316,7 @@
           darkHint.classList.toggle("show", !!showHint);
 
           /* print-size segment availability: pocket prints are fixed at
-             4″ × 4″, and aprons print ONLY on the small front pocket,
+             4.5″ × 4.5″, and aprons print ONLY on the small front pocket,
              so the Standard/Oversize choice doesn't apply to either. */
           var isPocket = state.placement === "pocket";
           var isApron = state.product === "apron";
@@ -4508,6 +4609,105 @@
         artworkEl.addEventListener("pointercancel", endDrag);
         handle.addEventListener("pointerup", endDrag);
         handle.addEventListener("pointercancel", endDrag);
+
+        /* ---------- Click-to-enlarge preview ----------
+           Tapping or clicking the shirt view opens a full-screen
+           overlay with the shirt shown large and the logo exactly
+           as placed. The overlay holds a deep clone of the stage
+           taken at open time — every position and size in the
+           stage is a percentage, so the clone scales up with the
+           logo in exactly the same spot. It is view-only: no
+           state is read back from it, no price, summary or send
+           path touches it, and closing it changes nothing.
+           Tap vs drag: a press on the stage is recorded on
+           pointerdown and judged on pointerup — it only counts
+           as a tap when the pointer barely moved (under 9px) and
+           lifted quickly (under 600ms). Dragging the artwork (or
+           the resize handle) moves well past that, so dragging
+           still just drags and never opens the big view. Presses
+           that start on the Upload button, the Enlarge button or
+           the resize handle are never taps — those controls keep
+           their own jobs. */
+        var enlargeOverlay = document.getElementById("enlargeOverlay");
+        var enlargeHolder = document.getElementById("enlargeHolder");
+        var enlargeTitle = document.getElementById("enlargeTitle");
+        var enlargeCloseBtn = document.getElementById("enlargeClose");
+        var stageEnlargeBtn = document.getElementById("stageEnlargeBtn");
+        var enlargeWasOpen = false;
+        var savedBodyOverflow = "";
+        function openEnlarge() {
+          if (!enlargeOverlay || !enlargeHolder || enlargeWasOpen) return;
+          var clone = stage.cloneNode(true);
+          /* Strip every id in the clone so the live stage keeps
+             sole ownership of its ids (render() and the drag
+             handlers look elements up by id). */
+          clone.removeAttribute("id");
+          var withIds = clone.querySelectorAll("[id]");
+          for (var i = 0; i < withIds.length; i++) withIds[i].removeAttribute("id");
+          /* The clone is not editable: drop its tab stop and any
+             hidden state stays exactly as the live stage shows it. */
+          var cloneArt = clone.querySelector(".artwork");
+          if (cloneArt) { cloneArt.removeAttribute("tabindex"); cloneArt.classList.remove("resizing"); }
+          enlargeHolder.innerHTML = "";
+          enlargeHolder.appendChild(clone);
+          if (enlargeTitle) {
+            var prodNow = currentProduct();
+            enlargeTitle.textContent = prodNow.label + " — " + colorLabel() + " · " + currentViewName();
+          }
+          savedBodyOverflow = document.body.style.overflow || "";
+          document.body.style.overflow = "hidden";
+          enlargeOverlay.hidden = false;
+          enlargeWasOpen = true;
+          if (enlargeCloseBtn) enlargeCloseBtn.focus();
+        }
+        function closeEnlarge() {
+          if (!enlargeWasOpen) return;
+          enlargeOverlay.hidden = true;
+          enlargeHolder.innerHTML = "";
+          document.body.style.overflow = savedBodyOverflow;
+          enlargeWasOpen = false;
+          if (stageEnlargeBtn) stageEnlargeBtn.focus();
+        }
+        if (stageEnlargeBtn) {
+          stageEnlargeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openEnlarge();
+          });
+        }
+        if (enlargeCloseBtn) enlargeCloseBtn.addEventListener("click", closeEnlarge);
+        if (enlargeOverlay) {
+          /* Tapping anywhere outside the big shirt itself (the
+             dim backdrop, the title, the hint) closes it. */
+          enlargeOverlay.addEventListener("click", function (e) {
+            if (e.target === enlargeCloseBtn) return;
+            if (enlargeHolder && enlargeHolder.contains(e.target)) return;
+            closeEnlarge();
+          });
+        }
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && enlargeWasOpen) closeEnlarge();
+        });
+        var stageTap = null;
+        stage.addEventListener("pointerdown", function (e) {
+          var t = e.target;
+          if (t && t.closest && (t.closest("#stageUploadBtn") || t.closest("#stageEnlargeBtn") || t.closest("#resizeHandle"))) {
+            stageTap = null;
+            return;
+          }
+          stageTap = { x: e.clientX, y: e.clientY, at: Date.now(), id: e.pointerId };
+        });
+        stage.addEventListener("pointerup", function (e) {
+          if (!stageTap || e.pointerId !== stageTap.id) { stageTap = null; return; }
+          var moved = Math.hypot(e.clientX - stageTap.x, e.clientY - stageTap.y);
+          var held = Date.now() - stageTap.at;
+          stageTap = null;
+          /* A real drag of the artwork ends here too — it moved
+             (or is a resize, which starts on the handle and was
+             never recorded), so only a true tap opens the view. */
+          if (drag) return;
+          if (moved <= 9 && held <= 600) openEnlarge();
+        });
+        stage.addEventListener("pointercancel", function () { stageTap = null; });
 
         /* keyboard nudge for the focused artwork */
         artworkEl.addEventListener("keydown", function (e) {
