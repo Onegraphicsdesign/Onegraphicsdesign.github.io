@@ -146,15 +146,15 @@
       .shop-logo:hover .shop-logo-img, .shop-logo:focus-visible .shop-logo-img { opacity: 0.88; }
       .shop-logo:hover .logo-sub, .shop-logo:focus-visible .logo-sub { color: var(--ink); }
       @media (max-width: 480px) { .shop-logo-img { width: 168px; } }
-      /* Language switch: sits in the header banner at the top
-         right, beside the shop logo. The button shows the current
-         language; tapping it opens a small menu (English /
-         Español) and the pick re-labels the designer's main text
-         for this visit only — the design summary and the emailed
-         quote are never touched (see the language script at the
-         end of the page). On narrow screens it drops to its own
-         right-aligned row above the logo so it never covers it. */
-      .lang-switch { position: absolute; top: 16px; right: 20px; z-index: 300; }
+      /* Language switch: sits in the header banner centered
+         directly under the shop logo, on desktop and mobile
+         alike. The button shows the current language; tapping it
+         opens a small menu (English / Español) and the pick
+         re-labels the designer's main text for this visit only —
+         the design summary and the emailed quote are never
+         touched (see the language script at the end of the
+         page). */
+      .lang-switch { position: relative; z-index: 300; display: flex; justify-content: center; margin: 0 0 4px; }
       .lang-btn {
         appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
         border: 1.5px solid var(--line); background: #ffffff; color: var(--ink);
@@ -166,7 +166,7 @@
       .lang-btn:hover, .lang-btn:focus-visible { border-color: var(--accent); color: var(--accent); }
       .lang-caret { font-size: 11px; line-height: 1; }
       .lang-menu {
-        position: absolute; top: calc(100% + 6px); right: 0; min-width: 168px;
+        position: absolute; top: calc(100% + 6px); left: 50%; right: auto; transform: translateX(-50%); min-width: 168px;
         background: #ffffff; border: 1.5px solid var(--line); border-radius: 12px;
         box-shadow: 0 12px 32px rgba(0,0,0,0.18); padding: 6px; z-index: 6;
       }
@@ -180,7 +180,7 @@
       .lang-menu button .lang-check { width: 16px; flex: none; font-weight: 800; color: var(--accent); visibility: hidden; }
       .lang-menu button[aria-checked="true"] .lang-check { visibility: visible; }
       @media (max-width: 640px) {
-        .lang-switch { position: relative; top: auto; right: auto; display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .lang-switch { justify-content: center; }
         .lang-btn { font-size: 13px; min-height: 38px; padding: 8px 11px; }
       }
       /* Two-column layout on wide screens: the T-shirt preview
@@ -2879,12 +2879,21 @@
            pixels are sampled, fully transparent pixels are
            ignored, and the remaining colors are counted with
            coarse quantization (each channel bucketed to 32 steps,
-           8 levels) so anti-aliased edge pixels — which sit
-           between two real colors, or are the logo color at
-           partial opacity — do not count as extra colors. A
-           quantized color only counts when it covers a real share
-           of the visible pixels (at least 1% of them), so a stray
-           edge shade never inflates the count.
+           8 levels). Anti-aliased edge shades are kept out of the
+           count three ways. First, neutral pixels close to black
+           snap to black and neutral pixels close to white snap
+           to white before bucketing. Second, a quantized color
+           must cover a real share of the visible pixels (at least
+           1% of them). Third — the decisive test — a color only
+           counts when it FILLS an area: some of its pixels must
+           be completely surrounded by the same color. Edge shades
+           only ever form one-pixel bands between two real colors
+           (a black script logo on white, for example, carries
+           thousands of gray shades along its letter edges, each
+           gray bucket covering several percent of the pixels), so
+           they have no interior pixels and never count; every
+           real spot color of a genuine multi-color logo fills an
+           area and still counts in full.
            WHITE-BACKGROUND RULE: customers often upload a logo on
            a white background they do NOT want printed. White is
            counted only when it is part of the design itself: when
@@ -2916,12 +2925,30 @@
             var px = ctx.getImageData(0, 0, cw, ch).data;
             var counts = {}, total = 0, i, key;
             var edgeCounts = {}, edgeTotal = 0;
+            /* Per-pixel bucket grid, kept for the interior test
+               below (-1 marks a transparent / ignored pixel). */
+            var grid = new Int32Array(cw * ch);
             for (i = 0; i < px.length; i += 4) {
-              if (px[i + 3] < 128) continue; /* ignore transparent pixels */
-              key = ((px[i] >> 5) << 6) | ((px[i + 1] >> 5) << 3) | (px[i + 2] >> 5);
+              var pi = i / 4;
+              if (px[i + 3] < 128) { grid[pi] = -1; continue; } /* ignore transparent pixels */
+              var pr = px[i], pg = px[i + 1], pb = px[i + 2];
+              /* Snap neutral edge shades before bucketing: a
+                 near-black gray (channels within 16 of each
+                 other, none above 64) is anti-aliasing of black,
+                 so it counts as black; a near-white gray (none
+                 below 192) is anti-aliasing of the white
+                 background, so it counts as white. Genuinely
+                 colored pixels are never snapped. */
+              var pMax = Math.max(pr, pg, pb), pMin = Math.min(pr, pg, pb);
+              if (pMax - pMin <= 16) {
+                if (pMax <= 64) { pr = 0; pg = 0; pb = 0; }
+                else if (pMin >= 192) { pr = 255; pg = 255; pb = 255; }
+              }
+              key = ((pr >> 5) << 6) | ((pg >> 5) << 3) | (pb >> 5);
+              grid[pi] = key;
               counts[key] = (counts[key] || 0) + 1;
               total++;
-              var pi = i / 4, ex = pi % cw, ey = (pi / cw) | 0;
+              var ex = pi % cw, ey = (pi / cw) | 0;
               if (ex === 0 || ey === 0 || ex === cw - 1 || ey === ch - 1) {
                 edgeCounts[key] = (edgeCounts[key] || 0) + 1;
                 edgeTotal++;
@@ -2936,11 +2963,33 @@
             var WHITE_KEY = (7 << 6) | (7 << 3) | 7;
             var bgKey = null;
             if (edgeTotal > 0 && (edgeCounts[WHITE_KEY] || 0) * 2 >= edgeTotal) bgKey = WHITE_KEY;
+            /* Interior test: count, per bucket, the pixels whose
+               four direct neighbours all share the same bucket.
+               A real spot color fills an area and has plenty of
+               these; an anti-aliased edge shade only ever forms a
+               one-pixel band between two other colors, so it has
+               none — however large its total share is. */
+            var interior = {};
+            for (var gy = 0; gy < ch; gy++) {
+              for (var gx = 0; gx < cw; gx++) {
+                var gi = gy * cw + gx, gk = grid[gi];
+                if (gk < 0) continue;
+                if (gx > 0 && grid[gi - 1] !== gk) continue;
+                if (gx < cw - 1 && grid[gi + 1] !== gk) continue;
+                if (gy > 0 && grid[gi - cw] !== gk) continue;
+                if (gy < ch - 1 && grid[gi + cw] !== gk) continue;
+                interior[gk] = (interior[gk] || 0) + 1;
+              }
+            }
             var minCount = Math.max(3, Math.floor(total * 0.01));
             var distinct = 0;
             for (key in counts) {
               if (bgKey !== null && Number(key) === bgKey) continue;
-              if (counts[key] >= minCount) distinct++;
+              if (counts[key] < minCount) continue;
+              /* No filled area, no color: edge shades are dropped
+                 even when they cover more than the 1% share. */
+              if ((interior[key] || 0) < Math.max(3, Math.floor(counts[key] * 0.02))) continue;
+              distinct++;
             }
             return { count: distinct, multi: distinct > 1, total: total };
           } catch (err) {
