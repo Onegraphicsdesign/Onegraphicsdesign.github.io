@@ -345,6 +345,14 @@
          or extra spacing from the generic .tool-block styling. */
       .side-panel.tool-block { margin-top: 0; padding-top: 12px; border-top: 1.5px solid var(--line); }
       .side-panel .custom-color-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      /* Compact color control: on PHONES ONLY each side panel is
+         collapsed behind this small control, which shows the
+         panel's CURRENT color (dot + name) and a chevron. It does
+         not exist on desktop — the panels there stay fully open
+         exactly as before — so the button is display:none outside
+         the phone media query below, where the collapse rules
+         live. */
+      .color-toggle { display: none; }
       @media (max-width: 920px) {
         /* Narrow screens: the color panels flank the shirt view
            exactly like on desktop — garment colors on the LEFT,
@@ -390,6 +398,45 @@
         }
         .side-panel .custom-color-row input[type="color"] { width: 36px; height: 30px; }
         .side-panel .custom-color-row .hex-now { font-size: 8.5px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+        /* Phones: the two color panels start COLLAPSED — each one
+           shrinks to a narrow strip showing only its compact color
+           control (current color dot + name + chevron), so the
+           shirt view between them gets nearly the full width. The
+           panel's title, swatches / chips and the Custom color row
+           stay hidden until the panel gets .colors-open (tapping
+           the control toggles it; picking a color closes it again
+           — see the script). Open, a panel is the same slim 58px
+           column it has always been on a phone. The panels stay in
+           the stage row either way, so they keep travelling pinned
+           with the shirt exactly as before — only their
+           collapsed / expanded state changes. */
+        .color-toggle {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 3px; width: 100%; min-height: 52px; padding: 6px 2px;
+          appearance: none; background: #ffffff; color: var(--ink); cursor: pointer;
+          border: 1.5px solid var(--line); border-radius: 9px; font: inherit;
+        }
+        .color-toggle .ct-label { font-size: 8.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.2; text-align: center; overflow-wrap: break-word; }
+        .color-toggle .ct-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.25); flex: none; }
+        /* "Original colors" has no single color: the dot shows a
+           small multicolor wheel instead. */
+        .color-toggle .ct-dot.ct-multi { background: conic-gradient(#e23b3b, #f2a03d, #f5d93d, #57b84c, #3d7bd9, #8a4fd0, #e23b3b); }
+        .color-toggle .ct-name { font-size: 9px; font-weight: 700; line-height: 1.15; text-align: center; overflow-wrap: break-word; }
+        .color-toggle .ct-chev {
+          width: 7px; height: 7px; flex: none; margin-top: 1px;
+          border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+          transform: rotate(45deg); transition: transform 0.18s ease;
+        }
+        .side-panel.colors-open .color-toggle .ct-chev { transform: rotate(225deg); }
+        @media (prefers-reduced-motion: reduce) {
+          .color-toggle .ct-chev { transition: none; }
+        }
+        .side-panel:not(.colors-open) { flex-basis: 48px; width: 48px; }
+        .side-panel:not(.colors-open) .tool-title,
+        .side-panel:not(.colors-open) .swatches,
+        .side-panel:not(.colors-open) .logo-colors,
+        .side-panel:not(.colors-open) .custom-color-row { display: none; }
+        .side-panel.colors-open .color-toggle { margin-bottom: 7px; }
         /* The middle column is narrower on a phone now that the
            panels flank it, so the controls inside it compact a
            little to fit without wrapping sideways: the location
@@ -509,6 +556,35 @@
         .enlarge-overlay { padding: 60px 10px 16px; gap: 10px; }
         .stage-enlarge-btn { font-size: 12px; padding: 7px 9px; min-height: 34px; }
       }
+      /* ——— Friendly notice prompt ———
+         A small centered card over a dim backdrop, filled and
+         shown by the script for two "good to know" moments:
+         tapping Remove Background on an image that already has
+         no background, and a Screen printing logo that carries
+         more than the 2 included colors. One "Got it" button —
+         the prompt only explains; it blocks nothing and changes
+         no price. Notices queue in the script, so two never
+         stack on top of each other. */
+      .notice-overlay {
+        position: fixed; inset: 0; z-index: 400;
+        background: rgba(23,20,15,0.72);
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px 16px; overflow-y: auto;
+      }
+      .notice-overlay[hidden] { display: none !important; }
+      .notice-card {
+        background: var(--surface); color: var(--ink);
+        border: 1.5px solid var(--line); border-radius: 14px;
+        box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+        width: 100%; max-width: 430px; padding: 24px 22px 20px;
+      }
+      .notice-title { margin: 0 0 10px; font-size: 19px; font-weight: 800; line-height: 1.3; }
+      .notice-body { font-size: 15px; line-height: 1.55; }
+      .notice-body p { margin: 0 0 10px; }
+      .notice-body p:last-child { margin-bottom: 0; }
+      .notice-body ul { margin: 0 0 10px; padding-left: 20px; }
+      .notice-body li { margin: 0 0 4px; }
+      .notice-ok { margin-top: 16px; }
       .product-placeholder {
         position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 6px; background: var(--stage); pointer-events: none;
@@ -1439,6 +1515,18 @@
                right in front of the customer (garment only — the
                stage background stays white). -->
           <div class="side-panel side-panel-garment" id="garmentColors">
+            <!-- Phone-only compact control: on a phone this panel
+                 starts collapsed behind this button, which shows
+                 the CURRENT garment color; tapping it opens the
+                 swatches below, tapping it again (or picking a
+                 color) closes the panel back up. Hidden on desktop,
+                 where the panel is always fully open. -->
+            <button type="button" class="color-toggle" id="garmentColorToggle" aria-expanded="false" aria-controls="shirtSwatches" aria-label="Shirt color: White. Tap to change.">
+              <span class="ct-label" id="garmentToggleLabel">Shirt color</span>
+              <span class="ct-dot" id="garmentToggleDot" style="background:#f5f5f2"></span>
+              <span class="ct-name" id="garmentToggleName">White</span>
+              <span class="ct-chev" aria-hidden="true"></span>
+            </button>
             <h3 class="tool-title"><span id="colorHeadingLabel">T-shirt color</span></h3>
             <div class="swatches" role="group" aria-label="Shirt color" id="shirtSwatches">
               <button type="button" class="swatch" data-color="white" aria-pressed="true"><span class="dot" style="background:#f5f5f2"></span>White</button>
@@ -1579,6 +1667,18 @@
                white" toggle is NOT here — it stays with the logo
                tools in step 1 (Print method). -->
           <div class="side-panel side-panel-logo tool-block" aria-labelledby="h-logo-color" id="logoColorBlock">
+              <!-- Phone-only compact control: same idea as the
+                   garment panel — on a phone this panel starts
+                   collapsed behind this button showing the CURRENT
+                   logo color; tapping opens the chips and the
+                   Custom color picker, picking a color (or tapping
+                   the button again) closes it. Hidden on desktop. -->
+              <button type="button" class="color-toggle" id="logoColorToggle" aria-expanded="false" aria-controls="logoColorGroup" aria-label="Logo color: original colors. Tap to change.">
+                <span class="ct-label">Logo color</span>
+                <span class="ct-dot ct-multi" id="logoToggleDot"></span>
+                <span class="ct-name" id="logoToggleName">Original</span>
+                <span class="ct-chev" aria-hidden="true"></span>
+              </button>
               <h3 class="tool-title" id="h-logo-color">Logo color</h3>
               <div class="logo-colors" role="group" aria-label="Logo color" id="logoColorGroup">
                 <button type="button" class="color-chip" data-logo-color="" aria-pressed="true">Original colors</button>
@@ -1883,6 +1983,21 @@
       </div>
       <div class="enlarge-holder" id="enlargeHolder"></div>
       <p class="enlarge-hint">Tap outside the shirt or the × to go back to designing.</p>
+    </div>
+
+    <!-- Friendly notice prompt: a small card the script fills
+         and shows for "good to know" moments — an image that
+         already has no background when Remove Background is
+         tapped, and a Screen printing logo with more than the
+         2 included colors. The "Got it" button (or tapping the
+         dim backdrop, or Escape) closes it; the design, the
+         price and the checkout flow are untouched by it. -->
+    <div class="notice-overlay" id="noticeOverlay" role="dialog" aria-modal="true" aria-labelledby="noticeTitle" hidden>
+      <div class="notice-card">
+        <h2 class="notice-title" id="noticeTitle"></h2>
+        <div class="notice-body" id="noticeBody"></div>
+        <button type="button" class="btn primary notice-ok" id="noticeOk">Got it</button>
+      </div>
     </div>
 
     <section class="thank-you-screen" id="thankYouScreen" aria-labelledby="thankYouTitle" hidden>
@@ -2846,6 +2961,10 @@
             if (res) { d.multiColor = !!res.multi; d.colorCount = res.count; }
             else { d.multiColor = false; d.colorCount = 0; }
             render();
+            /* A freshly counted logo may carry the Screen
+               extra-color charge for the first time — prompt
+               the reminder (once per logo version). */
+            maybeShowColorChargeNotice();
             return res;
           }).catch(function () {
             if (d.colorSeq !== seq) return null;
@@ -2965,6 +3084,10 @@
             if (!d.bgSrc) d.processedW = 0;
             d.toolNote = "Back to the logo’s original colors.";
             render();
+            /* Back to the original colors can bring a multi-color
+               count (and its Screen charge) back — prompt the
+               reminder if this logo version hasn't shown it. */
+            maybeShowColorChargeNotice();
             return;
           }
           d.colorHex = hex.toLowerCase();
@@ -3011,6 +3134,13 @@
             for (by = 1; by < H - 1; by++) { sampleBorder((by * W) * 4); sampleBorder((by * W + W - 1) * 4); }
             if (borderTotal && borderClear / borderTotal >= 0.75) {
               d.toolNote = "Good news — this file already has a transparent background, so there’s nothing to remove.";
+              /* Friendly prompt, not just the note text: the image
+                 already has no background, so say so out loud —
+                 otherwise the tap looks like it did nothing. */
+              showNotice(
+                "You’re good to go!",
+                "<p>Good news — this image already has no background. It’s already transparent, so there’s nothing to remove.</p>"
+              );
               render(); return;
             }
             if (!bR.length) { d.toolNote = "That file couldn’t be processed here — the original is unchanged."; render(); return; }
@@ -3692,6 +3822,12 @@
           renderPricing();
           renderAgreement();
           renderSummary();
+          /* Keep the phone-only compact color controls (the
+             collapsed side panels) showing the color that is
+             actually current — render runs after every color
+             change, including the automatic resets on a product
+             switch. No-op on desktop, where they are hidden. */
+          syncColorToggles();
         }
 
         /* Own-garment box (step 4): keep the checkbox, the details
@@ -4741,6 +4877,97 @@
         handle.addEventListener("pointerup", endDrag);
         handle.addEventListener("pointercancel", endDrag);
 
+        /* ---------- Friendly notice prompt ----------
+           One small modal card (the #noticeOverlay markup above),
+           reused by the two "good to know" prompts below.
+           showNotice(title, bodyHtml) queues: if a notice is
+           already open the next one waits, so two prompts never
+           stack. "Got it", a tap on the dim backdrop, or Escape
+           closes the open one and shows the next in line. The
+           prompt is informational only — it never blocks a step,
+           changes a price, or touches the send / checkout flow. */
+        var noticeOverlay = document.getElementById("noticeOverlay");
+        var noticeTitleEl = document.getElementById("noticeTitle");
+        var noticeBodyEl = document.getElementById("noticeBody");
+        var noticeOkBtn = document.getElementById("noticeOk");
+        var noticeQueue = [];
+        var noticeIsOpen = false;
+        var noticeSavedOverflow = "";
+        function showNotice(title, bodyHtml) {
+          noticeQueue.push({ title: title, body: bodyHtml });
+          pumpNotice();
+        }
+        function pumpNotice() {
+          if (noticeIsOpen || !noticeQueue.length || !noticeOverlay || !noticeTitleEl || !noticeBodyEl) return;
+          var n = noticeQueue.shift();
+          noticeTitleEl.textContent = n.title;
+          noticeBodyEl.innerHTML = n.body;
+          noticeSavedOverflow = document.body.style.overflow || "";
+          document.body.style.overflow = "hidden";
+          noticeOverlay.hidden = false;
+          noticeIsOpen = true;
+          if (noticeOkBtn) noticeOkBtn.focus();
+        }
+        function closeNotice() {
+          if (!noticeIsOpen) return;
+          noticeOverlay.hidden = true;
+          noticeIsOpen = false;
+          document.body.style.overflow = noticeSavedOverflow;
+          pumpNotice();
+        }
+        if (noticeOkBtn) noticeOkBtn.addEventListener("click", closeNotice);
+        if (noticeOverlay) {
+          noticeOverlay.addEventListener("click", function (e) {
+            if (e.target === noticeOverlay) closeNotice();
+          });
+        }
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && noticeIsOpen) closeNotice();
+        });
+
+        /* ---------- Extra-color reminder (Screen printing) ----------
+           The first time a placed logo is found to carry the
+           extra-color charge — right after its colors are counted,
+           or when the customer switches to Screen printing with
+           such a logo already placed — a prompt explains it:
+           the first 2 colors per logo are included, each extra
+           color adds $5.00 per item for that location, and the
+           charge is already in the total. Shown once per logo
+           version: the key follows the artwork actually counted
+           (bgSrc || src) plus its color count, so a new upload —
+           or a background removal that changes the count — can
+           prompt again, while ordinary re-renders never repeat
+           it. A picked Logo color counts as 1 color
+           (logoColorCount), so it never prompts. DTF and
+           Embroidery never charge per color, so they never
+           prompt. The inline Step 1 note (#colorChargeNote)
+           still shows as before — this prompt is the one-time
+           heads-up on top of it. */
+        function colorNoticeKeyFor(d) {
+          return (d.bgSrc || d.src || "") + "|" + logoColorCount(d);
+        }
+        function maybeShowColorChargeNotice() {
+          if (state.method !== "screen") return;
+          var fresh = screenColorChargeLocations().filter(function (info) {
+            var d = state.designs[info.p];
+            return d && d.colorNoticeKey !== colorNoticeKeyFor(d);
+          });
+          if (!fresh.length) return;
+          fresh.forEach(function (info) {
+            var d = state.designs[info.p];
+            if (d) d.colorNoticeKey = colorNoticeKeyFor(d);
+          });
+          var items = fresh.map(function (info) {
+            return "<li>" + placementLabel(info.p) + " logo: " + info.count + " colors — " + info.extra + " extra color" + (info.extra === 1 ? " adds " : "s add ") + money(info.fee) + " per item.</li>";
+          }).join("");
+          showNotice(
+            "A quick note about colors",
+            "<p>Screen printing includes the first 2 colors in each logo. Each extra color adds " + money(EXTRA_COLOR_FEE) + " per item for that print location.</p>" +
+            "<ul>" + items + "</ul>" +
+            "<p>Your total already includes this charge — there’s nothing extra to pay at checkout.</p>"
+          );
+        }
+
         /* ---------- Click-to-enlarge preview ----------
            Tapping or clicking the shirt view opens a full-screen
            overlay with the shirt shown large and the logo exactly
@@ -5073,6 +5300,10 @@
           btn.addEventListener("click", function () {
             state.method = btn.getAttribute("data-method");
             render();
+            /* Switching TO Screen printing can make an already
+               placed, already counted logo chargeable for the
+               first time — prompt the extra-color reminder. */
+            maybeShowColorChargeNotice();
           });
         });
         /* Rush order (above the price box): the box only shows while
@@ -5105,6 +5336,91 @@
         logoColorInput.addEventListener("change", function () {
           setLogoColor(logoColorInput.value);
         });
+        /* ---------- Phone-only collapsible color panels ----------
+           On a phone each side panel starts collapsed behind its
+           compact color control (see .color-toggle in the CSS):
+           the control shows the panel's CURRENT color, tapping it
+           opens the panel's swatches / chips, and picking a color
+           — or tapping the control again — collapses it back, so
+           the shirt keeps nearly the full width. The .colors-open
+           class only has any effect inside the phone media query;
+           on desktop the controls are hidden and the panels are
+           always fully open, exactly as before. The panels never
+           leave the stage row, so they stay pinned with the shirt
+           while scrolling in both states. */
+        var garmentPanelEl = document.getElementById("garmentColors");
+        var logoPanelEl = document.getElementById("logoColorBlock");
+        var garmentToggleEl = document.getElementById("garmentColorToggle");
+        var logoToggleEl = document.getElementById("logoColorToggle");
+        function setColorPanelOpen(panel, toggle, open) {
+          if (!panel) return;
+          panel.classList.toggle("colors-open", !!open);
+          if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        }
+        function wireColorToggle(panel, toggle) {
+          if (!panel || !toggle) return;
+          toggle.addEventListener("click", function () {
+            setColorPanelOpen(panel, toggle, !panel.classList.contains("colors-open"));
+          });
+        }
+        wireColorToggle(garmentPanelEl, garmentToggleEl);
+        wireColorToggle(logoPanelEl, logoToggleEl);
+        /* Picking a color collapses that panel again (these run
+           alongside the pick handlers wired above — same buttons,
+           second listener). */
+        document.querySelectorAll("[data-color]").forEach(function (b) {
+          b.addEventListener("click", function () { setColorPanelOpen(garmentPanelEl, garmentToggleEl, false); });
+        });
+        document.querySelectorAll("[data-logo-color]").forEach(function (b) {
+          b.addEventListener("click", function () { setColorPanelOpen(logoPanelEl, logoToggleEl, false); });
+        });
+        logoColorInput.addEventListener("change", function () { setColorPanelOpen(logoPanelEl, logoToggleEl, false); });
+        /* Mirror the current colors onto the compact controls:
+           the garment side copies the pressed swatch's dot and
+           name (and the panel's own heading, so it reads "Hoodie
+           color" on a hoodie); the logo side copies the pressed
+           chip, falls back to the custom picker's hex when a
+           custom color is in use, and otherwise shows the
+           multicolor dot for the logo's original colors. Called
+           at the end of every render(). */
+        function syncColorToggles() {
+          if (garmentToggleEl) {
+            var sw = document.querySelector("#shirtSwatches [data-color][aria-pressed='true']");
+            if (sw) {
+              var sDot = sw.querySelector(".dot");
+              var gDot = document.getElementById("garmentToggleDot");
+              var gName = document.getElementById("garmentToggleName");
+              var gLabel = document.getElementById("garmentToggleLabel");
+              var head = document.getElementById("colorHeadingLabel");
+              if (gDot && sDot) gDot.style.background = sDot.style.background || "";
+              if (gName) gName.textContent = sw.textContent.trim();
+              if (gLabel && head) gLabel.textContent = head.textContent;
+              garmentToggleEl.setAttribute("aria-label", (head ? head.textContent : "Shirt color") + ": " + sw.textContent.trim() + ". Tap to change.");
+            }
+          }
+          if (logoToggleEl) {
+            var chip = document.querySelector("[data-logo-color][aria-pressed='true']");
+            var lDot = document.getElementById("logoToggleDot");
+            var lName = document.getElementById("logoToggleName");
+            var lNameText = "Original";
+            var lBg = "";
+            if (chip && chip.getAttribute("data-logo-color")) {
+              var cDot = chip.querySelector(".cdot");
+              lBg = cDot ? (cDot.style.background || chip.getAttribute("data-logo-color")) : chip.getAttribute("data-logo-color");
+              lNameText = chip.textContent.trim();
+            } else if (!chip) {
+              var hexMatch = logoColorHex && logoColorHex.textContent.match(/#[0-9a-fA-F]{6}/);
+              if (hexMatch) { lBg = hexMatch[0]; lNameText = hexMatch[0].toUpperCase(); }
+            }
+            if (lDot) {
+              lDot.style.background = lBg;
+              lDot.classList.toggle("ct-multi", !lBg);
+            }
+            if (lName) lName.textContent = lNameText;
+            logoToggleEl.setAttribute("aria-label", "Logo color: " + (lNameText === "Original" ? "original colors" : lNameText) + ". Tap to change.");
+          }
+        }
+        syncColorToggles();
         removeBgBtn.addEventListener("click", function () {
           applyRemoveBg(currentDesign());
         });
@@ -5515,7 +5831,7 @@
                 isVector: isSvg, isDefault: false, white: false, blob: true,
                 colorHex: null, colorSrc: null, bgSrc: null, bgRemoved: false,
                 bgTol: 60, processedW: 0, procSeq: 0, toolNote: "",
-                multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0,
+                multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0, colorNoticeKey: "",
                 x: 0, y: 0, w: p === "pocket" ? 92 : 82
               };
               state.designs[p] = d;
@@ -6674,7 +6990,7 @@
                 isVector: false, isDefault: false, white: false, blob: false,
                 colorHex: null, colorSrc: null, bgSrc: null, bgRemoved: false,
                 bgTol: 60, processedW: 0, procSeq: 0, toolNote: "",
-                multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0,
+                multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0, colorNoticeKey: "",
                 x: 0, y: 0, w: p === "pocket" ? 92 : 82
               };
               state.designs[p] = d;
@@ -6931,6 +7247,11 @@
           "One size — adjustable snapback. Hats print on the front panel only, and the minimum is 12 hats.": "Talla única — cierre ajustable tipo snapback. Los sombreros se imprimen solo en el panel frontal, y el mínimo es de 12 sombreros.",
           "About this item": "Acerca de este artículo",
           "Background removal": "Quitar el fondo", "Remove Background": "Quitar fondo", "Restore Background": "Restaurar fondo",
+          "You’re good to go!": "¡Todo listo!",
+          "Good news — this image already has no background. It’s already transparent, so there’s nothing to remove.": "Buenas noticias — esta imagen ya no tiene fondo. Ya es transparente, así que no hay nada que quitar.",
+          "A quick note about colors": "Una nota rápida sobre los colores",
+          "Your total already includes this charge — there’s nothing extra to pay at checkout.": "Tu total ya incluye este cargo — no tienes que pagar nada extra.",
+          "Got it": "Entendido",
           "Attach original (AI / PSD / PDF)": "Adjuntar original (AI / PSD / PDF)",
           "The shop asks for the original file too — please attach the AI, PSD, or PDF original above before you finish.": "La tienda también pide el archivo original — adjunta el original en AI, PSD o PDF aquí arriba antes de terminar.",
           "Original attached:": "Original adjunto:",
@@ -7110,6 +7431,8 @@
           [/^Aprons print on the small front pocket only — up to ([\d.]+)″ × ([\d.]+)″\.$/, function (m) { return "Los delantales se imprimen solo en el bolsillo frontal pequeño — hasta " + m[1] + "″ × " + m[2] + "″."; }],
           [/^(Front|Back|Pocket|Left pocket):$/, function (m) { return mapOf(LOC_ES, m[1]) + ":"; }],
           [/^This logo has (\d+) colors\. Screen printing includes 2 colors — (.+?) per extra color per item \((.+?) per item for this location\)\.$/, function (m) { return "Este logo tiene " + m[1] + " colores. La serigrafía incluye 2 colores — " + m[2] + " por color extra por artículo (" + m[3] + " por artículo en esta ubicación)."; }],
+          [/^Screen printing includes the first 2 colors in each logo\. Each extra color adds (.+?) per item for that print location\.$/, function (m) { return "La serigrafía incluye los primeros 2 colores de cada logo. Cada color extra agrega " + m[1] + " por artículo en esa ubicación de impresión."; }],
+          [/^(Front|Back|Pocket|Left pocket) logo: (\d+) colors — (\d+) extra (color|colors) (adds|add) (.+?) per item\.$/, function (m) { var one = m[3] === "1"; return mapOf(LOC_ES, m[1]) + ": logo de " + m[2] + " colores — " + m[3] + (one ? " color extra agrega " : " colores extra agregan ") + m[6] + " por artículo."; }],
           [/^(.+?) — (.+?) · (Front|Back|Pocket|Left pocket) view$/, function (m) { return mapOf(PRODUCT_ES, m[1]) + " — " + mapOf(COLOR_NAME_ES, m[2]) + " · " + mapOf(VIEW_ES, m[3]); }],
           [/^Bulk (.+?) order — (\d+)\+ (.+)$/, function (m) { return "Pedido al por mayor (" + mapOf(METHOD_PHRASE_ES, m[1]) + ") — " + m[2] + "+ " + mapOf(PLURAL_ES, m[3]); }],
           [/^(.+?) · (Screen printing|Embroidery|DTF \(direct to film\))$/, function (m) { return mapOf(COMBO_ES, m[1]) + " · " + mapOf(METHOD_ES, m[2]); }],
