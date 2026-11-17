@@ -45,7 +45,7 @@
         font-size: 16px;
         line-height: 1.45;
       }
-      main { max-width: 1320px; margin: 0 auto; padding: 24px 20px 56px; }
+      main { max-width: 1440px; margin: 0 auto; padding: 24px 20px 56px; }
       /* ——— Background pattern shine (screen only) ———
          A single "1" monogram from the page's repeating background
          pattern lights up now and then: the shine layer sits directly
@@ -159,7 +159,7 @@
       @media (min-width: 921px) {
         .layout {
           display: grid;
-          grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
           gap: 24px;
         }
         .layout > .panel { margin-top: 0; }
@@ -181,10 +181,11 @@
          screens the layout is a single column and .stage-wrap is
          dissolved (display: contents), which makes the unit a
          direct participant in .layout and lets it stay pinned while
-         every step below scrolls past. Product (step 1) and Print method
-         with the print locations and the per-location logo
-         uploads (all step 2) sit at the top
-         of the steps panel, as steps 1–2. The garment color
+         every step below scrolls past. Print method (step 1) and
+         Product (step 2) sit at the top of the steps panel, as
+         steps 1–2; the print locations and the per-location logo
+         uploads live in the unit itself, under the print size
+         (.logo-under). The garment color
          swatches and the Logo color controls sit in two separate
          panels flanking the stage, inside the unit (.side-panel)
          — there is no Color step. */
@@ -194,6 +195,14 @@
       }
       .stage-unit {
         position: sticky; top: 14px; z-index: 30;
+        /* The Your logo block now lives in this unit under the
+           print size, which makes the unit taller than many
+           screens: cap it at the viewport height and let it
+           scroll internally, so every control in the pinned
+           preview — shirt, colors, print size and the logo upload
+           rows — stays reachable while it travels. */
+        max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px);
+        overflow-y: auto;
         /* Solid backdrop so sections scrolling underneath
            don't show through the gaps between the tracker chips —
            the shirt and the numbers read as one solid unit. */
@@ -205,13 +214,17 @@
          bottom steps (5–8) were never visible while scrolling.
          The stage row is therefore capped and centered — the stage
          keeps its exact 3:2 ratio (the print-area percentages are
-         measured against it), it is simply narrower, which makes
-         the whole unit shorter and leaves a clear band of the
-         steps visible under it at all times. Short windows cap
-         it narrower still. */
-      .stage-row { max-width: 760px; margin: 0 auto; }
+         measured against it), it is simply sized to the cap, which
+         makes the whole unit shorter and leaves a clear band of
+         the steps visible under it at all times. Short windows cap
+         it narrower still. The preview was enlarged on request:
+         the page cap rose to 1440px, the preview column now takes
+         2/3 of the wide layout, and the row cap rose with them —
+         only widths changed, never the 3:2 ratio, so the
+         print-area / artwork mapping is untouched. */
+      .stage-row { max-width: 920px; margin: 0 auto; }
       @media (min-width: 921px) and (max-height: 800px) {
-        .stage-row { max-width: 648px; }
+        .stage-row { max-width: 780px; }
       }
       /* Single column only: the steps panel sits UNDER the preview
          and needs its gap from it. In the wide two-column grid the
@@ -232,13 +245,13 @@
          text, only its short label ("T-shirt color" on the left,
          "Logo color" on the right); the Custom color picker stays
          on the logo (right) side. On narrow screens the panels
-         stack under the sticky preview (moved there by
-         placeSideColors in the script, so the sticky unit stays
-         short and the tracker under it always fits on a phone):
-         the image first, then the garment colors, then the logo
-         colors. Nothing about the controls themselves changed —
-         same ids, same buttons, same behavior; only where they
-         sit. */
+         stay exactly where they are on desktop — garment colors
+         on the LEFT of the image, logo colors on the RIGHT —
+         only narrower and more compact (a slim column of small
+         swatches, dot over a tiny label), so the shirt keeps as
+         much of the phone's width as possible. Nothing about the
+         controls themselves changed — same ids, same buttons,
+         same behavior; only how wide the panels sit on a phone. */
       .stage-row { display: flex; gap: 14px; align-items: flex-start; }
       .stage-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
       .stage-col .stage { flex: none; width: 100%; }
@@ -257,6 +270,20 @@
       .print-size-under .seg { justify-content: center; }
       .print-size-under .seg button { font-size: 14.5px; padding: 9px 12px; min-height: 46px; }
       .print-size-under .seg-note { text-align: center; margin-top: 8px; }
+      /* Your logo block: the per-location DETAIL line lives here,
+         directly under the Print size picker in the middle column
+         (the location pill row sits above the print size picker,
+         right under the shirt, and the Upload button sits on the
+         shirt view itself). The rest of the logo tools (Remove
+         Background, attach-original) live in step 1 (Print
+         method). Same white
+         card look as the print size picker above it. */
+      .logo-under {
+        background: #ffffff; border: 1.5px solid var(--line); border-radius: 14px;
+        padding: 12px;
+      }
+      .logo-under > .tool-title { text-align: center; margin-bottom: 4px; }
+      .logo-under .bg-tools { text-align: center; }
       .side-panel {
         flex: 0 0 150px; min-width: 0;
         background: #ffffff; border: 1.5px solid var(--line); border-radius: 14px;
@@ -275,24 +302,70 @@
       .side-panel.tool-block { margin-top: 0; padding-top: 12px; border-top: 1.5px solid var(--line); }
       .side-panel .custom-color-row { flex-direction: column; align-items: flex-start; gap: 6px; }
       @media (max-width: 920px) {
-        /* Narrow screens: the panels stack under the preview
-           instead of squeezing beside it — the image first, then
-           the garment colors, then the logo colors, each still one
-           color per row. The panels sit in normal flow right under
-           the sticky preview unit (see placeSideColors). If the
-           script ever fails to move them, the order rules below
-           still stack them under the stage in that same order. */
-        .stage-row { flex-direction: column; max-width: none; }
-        /* On phones the pinned unit is stage + print size + caption
-           + tracker; capping the stage column at 300px keeps the
-           whole unit short enough that the steps below stay
-           visible while it is pinned. The stage keeps its 3:2
-           ratio, only narrower and centered. */
-        .stage-row .stage-col { width: 100%; flex: none; order: 1; max-width: 300px; margin: 0 auto; }
-        .stage-caption { font-size: 13.5px; line-height: 1.45; }
-        .side-panel { flex: none; width: 100%; margin-top: 14px; }
-        .side-panel-garment { order: 2; }
-        .side-panel-logo { order: 3; }
+        /* Narrow screens: the color panels flank the shirt view
+           exactly like on desktop — garment colors on the LEFT,
+           logo colors on the RIGHT — instead of stacking below
+           the image. The panels shrink to slim 58px columns so
+           the shirt keeps as much width as possible: tight
+           padding and gaps, each swatch/chip a small stacked
+           cell (color dot over a tiny label), panel titles
+           centered at a small size, and the Custom color picker
+           compact and centered on the logo side. The stage
+           column takes whatever width is left between the two
+           panels and keeps its exact 3:2 ratio. The caption and
+           the step tracker still move out of the pinned unit on
+           phones (see placeSideColors) — only the two color
+           panels stay in the row. */
+        .stage-row { flex-direction: row; max-width: none; gap: 6px; }
+        .stage-row .stage-col { flex: 1 1 0; width: auto; min-width: 0; max-width: none; margin: 0; gap: 8px; }
+        /* Mobile only: the caption sits over the patterned page
+           background, so give it a solid white background with a
+           little padding to keep the text readable. */
+        .stage-caption { font-size: 13.5px; line-height: 1.45; background: #ffffff; padding: 10px 12px; border-radius: 8px; }
+        .side-panel { flex: 0 0 58px; width: 58px; margin-top: 0; padding: 7px 5px; border-radius: 10px; }
+        .side-panel .tool-title { font-size: 9.5px; letter-spacing: 0.03em; line-height: 1.3; text-align: center; margin-bottom: 6px; overflow-wrap: break-word; }
+        .side-panel .swatches { gap: 5px; }
+        .side-panel .swatch {
+          flex-direction: column; align-items: center; justify-content: center;
+          gap: 3px; min-height: 40px; padding: 5px 2px; border-radius: 9px;
+          font-size: 9.5px; line-height: 1.15; text-align: center;
+        }
+        .side-panel .swatch .dot { width: 20px; height: 20px; }
+        .side-panel .logo-colors { gap: 5px; }
+        .side-panel .color-chip {
+          flex-direction: column; align-items: center; justify-content: center;
+          gap: 3px; min-height: 40px; padding: 5px 2px; border-radius: 9px;
+          font-size: 9.5px; line-height: 1.15; text-align: center;
+        }
+        .side-panel .color-chip .cdot { width: 18px; height: 18px; }
+        .side-panel .custom-color-row { align-items: center; gap: 4px; margin-top: 7px; }
+        .side-panel .custom-color-row label {
+          flex-direction: column; align-items: center; gap: 4px;
+          font-size: 9.5px; line-height: 1.15; text-align: center;
+        }
+        .side-panel .custom-color-row input[type="color"] { width: 36px; height: 30px; }
+        .side-panel .custom-color-row .hex-now { font-size: 8.5px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+        /* The middle column is narrower on a phone now that the
+           panels flank it, so the controls inside it compact a
+           little to fit without wrapping sideways: the location
+           pills keep their single row under the shirt, the print
+           size segment stays on one row, and the Upload button
+           on the shirt view shrinks slightly. Same controls,
+           same order, same behavior. */
+        .loc-pill-row .loc-pill-label { font-size: 13.5px; }
+        .loc-pill-row button.loc-pill-main { padding: 7px 1px 7px 6px; }
+        .loc-pill-row button.loc-pill-remove { width: 24px; height: 24px; margin: 0 3px 0 0; font-size: 14px; }
+        .print-size-under { padding: 8px 6px; }
+        .print-size-under .print-size-hint { font-size: 12.5px; }
+        .print-size-under .seg { flex-wrap: nowrap; gap: 6px; }
+        .print-size-under .seg button { font-size: 12.5px; padding: 8px 6px; line-height: 1.3; }
+        .stage-upload-btn { font-size: 13.5px; padding: 9px 15px; min-height: 42px; bottom: 9px; }
+      }
+      @media (max-width: 400px) {
+        /* Very narrow phones: slim the side panels a touch more
+           so the shirt in the middle stays as big as possible. */
+        .side-panel { flex-basis: 52px; width: 52px; padding: 6px 4px; }
+        .stage-row { gap: 5px; }
       }
       .stage {
         position: relative;
@@ -454,8 +527,8 @@
          MINUS (−) — tap to see less. The sign is pure CSS driven by
          the section's .open class, so it flips on every open/close
          path: a tap on the heading, a tracker chip, or a step
-         auto-opening after the previous step is completed. Only
-         step 1 starts open, so the page opens short and tidy; a
+         auto-opening after the previous step is completed. Steps
+         1 and 2 start open, so the page opens short and tidy; a
          minimized step still shows its number, title, sign and —
          once complete — the green check in place of its number.
          The section's contents live in a .sec-body wrapper that is
@@ -475,9 +548,20 @@
         font-size: 22px; font-weight: 700; line-height: 1; color: var(--accent);
       }
       .sec-arrow::before { content: "+"; }
-      .panel section.open .sec-arrow::before { content: "−"; }
+      /* Scoped to the section's OWN heading (> h2): step 2 is nested
+         inside step 1's section, so an unscoped descendant rule made
+         step 2's sign copy step 1's open state — it showed "−" while
+         step 2 was folded shut and its product buttons were hidden. */
+      .panel section.open > h2 .sec-arrow::before { content: "−"; }
       .panel section[data-step-sec]:not(.open) h2 { margin-bottom: 0; }
       .panel section[data-step-sec]:not(.open) + section[data-step-sec] { margin-top: 16px; padding-top: 16px; }
+      /* Step 2 (Item) is placed INSIDE step 1's section, directly
+         under the print method buttons and before the Your logo
+         tools, so it cannot get the top-level section + section
+         separator above — give it the same rule and spacing here
+         so it still reads as its own step. */
+      #sec-method #sec-product { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 28px; }
+      #sec-method #sec-product:not(.open) { margin-top: 16px; padding-top: 16px; }
       /* Step 8 (Go to checkout) is EXEMPT from the accordion: it never
          collapses or minimizes, so the GO TO CHECKOUT button is always
          visible on the page. It gets no + / − toggle, its heading
@@ -513,17 +597,16 @@
       .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); width: 100%; font-size: 17px; padding: 16px; }
       .btn.small { font-size: 14.5px; padding: 9px 13px; min-height: 48px; border-color: var(--line); }
       .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-      /* Artwork tools group — the Artwork size controls AND the
-         Background removal controls live together ONLY in step 2,
-         directly under the logo's Remove / Center it row (nowhere
-         else on the page), centered as one group: the size slider
-         first, then the Remove Background / Restore Background
-         pair centered together. The block is ALWAYS visible so the
-         controls can be seen right away; Remove Background stays
-         greyed out until a logo is uploaded for the selected
-         location, and Restore Background stays greyed out until a
-         removal has actually been applied. There is no separate
-         Artwork size step — these tools live only here, in step 2. */
+      .btn-row.centered { justify-content: center; }
+      .btn.brown { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+      /* Background removal group — the Remove Background /
+         Restore Background pair lives ONLY in step 1 (Print
+         method), in the Your logo tools (nowhere else on the
+         page), centered together. The block is ALWAYS visible so
+         the controls can be seen right away; Remove Background
+         stays greyed out until a logo is uploaded for the
+         selected location, and Restore Background stays greyed
+         out until a removal has actually been applied. */
       .bg-tools { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px; text-align: center; }
       .bg-tools .tool-title { text-align: center; }
       .bg-tools .tool-title:not(:first-child) { margin-top: 22px; }
@@ -642,7 +725,7 @@
       .btn.email-btn.is-disabled { opacity: 0.55; cursor: not-allowed; }
       .pay-gate { font-size: 13.5px; font-weight: 700; color: var(--muted); margin: 8px 0 0; }
       .pay-gate.ok { color: var(--good); }
-      /* Extra-color charge note (Step 2 + per-location rows):
+      /* Extra-color charge note (Step 1 + per-location detail line):
          informational only — shown while Screen printing is
          picked and a placed logo has more than the 2 included
          colors, so it carries the $5-per-extra-color charge.
@@ -713,6 +796,22 @@
       .agree-box { border: 2px solid var(--ink); border-radius: 12px; padding: 16px; background: #fff; }
       .agree-box.checked { border-color: var(--good); background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
       .agree-recap { font-size: 14px; line-height: 1.55; margin: 0 0 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 9px; padding: 12px; height: 190px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+      .terms-toggle {
+        appearance: none; background: none; border: 0; padding: 4px 0; margin: 0 0 10px;
+        font: inherit; font-size: 15px; font-weight: 700; color: var(--accent);
+        text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 7px; min-height: 32px; text-align: left;
+      }
+      .terms-toggle:hover { color: var(--ink); }
+      .terms-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; color: var(--ink); }
+      .terms-toggle-sign { font-size: 18px; font-weight: 700; line-height: 1; }
+      .terms-toggle-sign::before { content: "+"; }
+      .terms-toggle[aria-expanded="true"] .terms-toggle-sign::before { content: "−"; }
+      .terms-box { background: #fff; border: 1.5px solid var(--line); border-radius: 9px; padding: 12px 14px; margin: 0 0 12px; }
+      .terms-list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.55; }
+      .terms-list li { margin: 0 0 6px; }
+      .terms-list li:last-child { margin-bottom: 0; }
+      .terms-agree-label { margin-top: 12px; }
       .agree-label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-weight: 700; font-size: 15px; line-height: 1.45; }
       .agree-label input[type="checkbox"] { width: 26px; height: 26px; flex: none; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }
       .agree-status { font-size: 13.5px; font-weight: 700; margin: 10px 0 0 38px; }
@@ -853,35 +952,99 @@
       .send-failed a { color: var(--accent); font-weight: 700; }
       .thank-you-home-link { font-size: 15px; font-weight: 700; color: var(--accent); margin-top: 18px; }
 
-      /* ---------- Per-location uploads (inside Step 2) ---------- */
-      /* One row per print location — the rows ARE the locations
-         (there are no Front / Back / Pocket tab buttons anymore).
-         Each row names its location, shows that location's print
-         size, shows the file uploaded for it (or plainly says none
-         is uploaded yet), and carries that location's own Upload
-         button plus an X that removes that location's logo — so
-         the customer uploads 1 logo for every location and can
-         always see which locations still need one. Tapping a row
-         shows that location on the preview above. */
-      .loc-uploads { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
-      .loc-upload-row {
-        display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
-        background: var(--surface); cursor: pointer;
+      /* ---------- Per-location uploads (in the preview) ---------- */
+      /* One pill button per print location, in a single horizontal
+         ROW directly under the shirt view (above the print size
+         picker) — the pills ARE the locations and
+         sit in the exact .seg segment style of the print-method
+         buttons (Screen printing / Embroidery / DTF): one row, the
+         selected location filled brown, the unselected ones white
+         with a light outline. Tapping a pill ONLY selects that
+         location and shows it on the item — it never opens the
+         file picker. The file picker opens only from the Upload
+         button ON the shirt view, which uploads to the selected
+         location and shows only while that location has no logo
+         yet. Each pill ALSO
+         shows the name of the
+         file uploaded for its own location (small, under the
+         location name, truncated if long) and, while that location
+         has a logo, its own small × that removes only that
+         location's logo — so every location's logo and its cancel
+         are visible at a glance, and a logo stays put until the
+         customer removes it. Under the row, one slim detail line
+         speaks for the SELECTED location only: its print size,
+         the file uploaded for it (or plainly that none is uploaded
+         yet), any extra-color note, and an X that removes that
+         location's logo. Pills show only for the locations the
+         product offers (e.g. hats and aprons offer one place only,
+         so they show a single pill). The row never wraps — the
+         three short labels always fit on one line. */
+      .loc-uploads { margin: 12px 0 16px; }
+      .loc-pill-row { flex-wrap: nowrap; }
+      .loc-pill-row button[hidden] { display: none; }
+      /* Each pill also carries its own logo's file name (under the
+         location name, small and truncated with an ellipsis — the
+         full name is on the pill's title and in the detail line
+         below) and, while a logo is on that location, its own
+         small × at the pill's right edge that removes ONLY that
+         location's logo. The pill is a wrapper in the exact .seg
+         segment look (same border, radius, brown-when-selected /
+         white otherwise); the main button filling the pill only
+         selects and shows that location, and the × is a separate
+         small button beside it — neither ever opens the file
+         picker; only the Upload button on the shirt view does. The row
+         still never wraps and never scrolls sideways: each pill
+         shrinks (min-width 0) and its file name truncates. */
+      .loc-pill-row .loc-pill {
+        flex: 1 1 0; min-width: 0; display: flex; align-items: stretch;
+        border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+        border-radius: 10px; min-height: 52px; overflow: hidden;
       }
-      .loc-upload-row.current { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
-      .loc-upload-row[hidden] { display: none; }
-      .loc-upload-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-      .loc-upload-name { font-weight: 700; font-size: 15px; color: var(--ink); }
+      .loc-pill-row .loc-pill[hidden] { display: none; }
+      .loc-pill-row .loc-pill.is-selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+      .loc-pill-row button.loc-pill-main {
+        flex: 1 1 auto; min-width: 0; min-height: 0; appearance: none;
+        border: 0; background: transparent; color: inherit; font: inherit;
+        padding: 8px 2px 8px 10px; cursor: pointer; text-align: left;
+        display: flex; flex-direction: column; justify-content: center; gap: 1px;
+      }
+      .loc-pill-row .loc-pill-label { font-weight: 600; font-size: 16px; line-height: 1.2; white-space: nowrap; }
+      .loc-pill-row .loc-pill-file {
+        font-size: 11.5px; font-weight: 500; line-height: 1.25; opacity: 0.85;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+      }
+      .loc-pill-row .loc-pill-file[hidden] { display: none; }
+      .loc-pill-row button.loc-pill-remove {
+        flex: none; align-self: center; width: 30px; height: 30px; min-height: 0;
+        margin: 0 5px 0 1px; padding: 0; appearance: none; cursor: pointer;
+        border: 1.5px solid currentColor; border-radius: 50%;
+        background: transparent; color: inherit; opacity: 0.75;
+        font: inherit; font-size: 16px; font-weight: 700; line-height: 1;
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+      .loc-pill-row button.loc-pill-remove[hidden] { display: none; }
+      .loc-pill-row button.loc-pill-remove:hover, .loc-pill-row button.loc-pill-remove:focus-visible { opacity: 1; color: #b3261e; border-color: #b3261e; background: var(--surface); }
+      .loc-detail { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+      /* Upload button: sits ON the shirt view itself (bottom center
+         of the stage) and is the ONLY control that opens the file
+         picker — it uploads to the SELECTED location. It shows only
+         while the selected location has no logo yet: once a logo is
+         uploaded for that location it disappears, and it comes back
+         when the logo is removed with a ×. Same brown as a selected
+         pill, pill-shaped so it reads as a button over the photo. */
+      .stage-upload-btn {
+        position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+        z-index: 6; appearance: none; cursor: pointer; white-space: nowrap;
+        border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+        font: inherit; font-weight: 700; font-size: 15px; padding: 11px 22px;
+        border-radius: 999px; min-height: 48px; box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+      }
+      .stage-upload-btn[hidden] { display: none; }
+      .stage-upload-btn:hover, .stage-upload-btn:focus-visible { filter: brightness(1.06); }
+      .loc-upload-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
       .loc-upload-size { font-size: 13px; font-weight: 600; color: var(--muted); }
       .loc-upload-status { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
       .loc-upload-status strong { color: var(--ink); }
-      .loc-upload-actions { display: flex; align-items: center; gap: 8px; flex: none; }
-      .loc-upload-btn {
-        flex: none; background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-        font-weight: 800;
-      }
-      .loc-upload-btn:hover, .loc-upload-btn:focus-visible { filter: brightness(1.06); }
       .loc-remove-btn {
         appearance: none; width: 38px; height: 38px; flex: none; padding: 0;
         border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface-2);
@@ -890,11 +1053,6 @@
       }
       .loc-remove-btn[hidden] { display: none; }
       .loc-remove-btn:hover, .loc-remove-btn:focus-visible { color: #b3261e; border-color: #b3261e; }
-      @media (max-width: 480px) {
-        .loc-upload-row { flex-direction: column; align-items: stretch; }
-        .loc-upload-actions { width: 100%; }
-        .loc-upload-actions .loc-upload-btn { flex: 1; width: auto; }
-      }
 
       /* ---------- User-friendliness: hints, step tracker ---------- */
       .step-hint { font-size: 15px; color: var(--muted); margin: -4px 0 14px; line-height: 1.55; }
@@ -907,22 +1065,24 @@
          it in --sticky-offset (unit height + a small gap); the
          calc below is only the pre-script fallback, tracking the
          capped stage row in the LEFT column of the wide layout:
-         the preview column is 7/11 of the content width (page
-         capped at 1320px, less its 40px of side padding and the
-         24px column gap), the row itself is capped at 760px, and
+         the preview column is 2/3 of the content width (page
+         capped at 1440px, less its 40px of side padding and the
+         24px column gap), the row itself is capped at 920px, and
          stage height is 2/3 of the middle column (row width less
          the two 150px color panels and their gaps), plus the
          print size picker, the caption and the tracker. */
-      html { scroll-padding-top: var(--sticky-offset, 640px); }
-      .panel section[id], .settings[id] { scroll-margin-top: var(--sticky-offset, calc((min((min(100vw, 1320px) - 64px) * 0.6364, 760px) - 328px) * 2 / 3 + 352px)); }
+      html { scroll-padding-top: var(--sticky-offset, 720px); }
+      .panel section[id], .settings[id] { scroll-margin-top: var(--sticky-offset, calc((min((min(100vw, 1440px) - 64px) * 0.6667, 920px) - 328px) * 2 / 3 + 352px)); }
       @media (max-width: 920px) {
-        /* On phones the pinned unit is the capped 300px stage plus
-           the print size picker, the caption and the wrapped
-           tracker rows under it — the fallback tracks that, and
-           the measured --sticky-offset takes over once the script
+        /* On phones the pinned unit is the stage flanked by the
+           two slim color panels, plus the location pills and the
+           print size picker in the middle column — the fallback
+           tracks that (stage width is the screen less the page
+           padding, the two 58px panels and their gaps), and the
+           measured --sticky-offset takes over once the script
            runs. */
         .stage-unit { top: 8px; }
-        .panel section[id], .settings[id] { scroll-margin-top: var(--sticky-offset, calc(min(100vw - 40px, 300px) * 2 / 3 + 260px)); }
+        .panel section[id], .settings[id] { scroll-margin-top: var(--sticky-offset, calc((100vw - 168px) * 2 / 3 + 300px)); }
       }
       .progress { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 2px; justify-content: center; }
       .pstep {
@@ -1150,7 +1310,7 @@
             </div>
             <div class="print-area" id="printArea">
               <span class="area-label" id="areaLabel">PRINT AREA</span>
-              <div class="area-empty" id="areaEmpty" hidden>Nothing on this side yet.<br />Use the Upload button below to add it.</div>
+              <div class="area-empty" id="areaEmpty" hidden>Nothing on this side yet.<br />Tap the Upload button to add it.</div>
               <div class="artwork" id="artwork" tabindex="0" role="img" aria-label="Your artwork. Drag to move, use the corner handle or the size slider to resize." hidden>
                 <div class="art-size-badge" id="artSizeBadge" aria-hidden="true"></div>
                 <img id="artworkImg" alt="" draggable="false" />
@@ -1159,14 +1319,51 @@
                 </div>
               </div>
             </div>
+            <!-- Upload button ON the shirt view: uploads to the
+                 SELECTED location (the pill row under the shirt).
+                 Shown only while that location has no logo yet —
+                 the script hides it once a logo is uploaded there
+                 and shows it again when the logo is removed. -->
+            <button type="button" class="stage-upload-btn" id="stageUploadBtn" aria-label="Upload the Front logo">Upload Front logo</button>
           </div><!-- /.stage -->
-          <!-- Print size picker: directly under the product image,
+          <!-- Location pills: one row DIRECTLY under the shirt view,
+               styled exactly like the print-method segment in step 1
+               — the selected location is filled brown, the others
+               white with a light outline. Tapping a pill ONLY selects
+               that location and shows it on the item — it never opens
+               the file picker. Each pill also shows the name of the
+               logo uploaded for ITS location (or nothing, while that
+               location has no logo yet), and carries its own small ×
+               that removes only that location's logo — a logo stays
+               on its location until the customer removes it there.
+               The file picker opens only from the Upload button ON
+               the shirt view, which uploads to the selected location
+               and shows only while that location has no logo yet.
+               The detail line (in the Your logo block, under the
+               print size picker below) shows the selected location's
+               print area, its uploaded file (or that none is uploaded
+               yet), and the × that removes its logo. -->
+          <div class="seg loc-pill-row" role="group" aria-label="Print location — tap a location to view it on the item">
+            <div class="loc-pill is-selected" data-loc-pill="front">
+              <button type="button" class="loc-pill-main" data-loc-select="front" aria-pressed="true"><span class="loc-pill-label">Front</span><span class="loc-pill-file" data-loc-file="front" hidden></span></button>
+              <button type="button" class="loc-pill-remove" data-loc-pill-remove="front" data-loc-remove="front" aria-label="Remove the Front logo" title="Remove the Front logo" hidden>×</button>
+            </div>
+            <div class="loc-pill" data-loc-pill="back">
+              <button type="button" class="loc-pill-main" data-loc-select="back" aria-pressed="false"><span class="loc-pill-label">Back</span><span class="loc-pill-file" data-loc-file="back" hidden></span></button>
+              <button type="button" class="loc-pill-remove" data-loc-pill-remove="back" data-loc-remove="back" aria-label="Remove the Back logo" title="Remove the Back logo" hidden>×</button>
+            </div>
+            <div class="loc-pill" data-loc-pill="pocket">
+              <button type="button" class="loc-pill-main" data-loc-select="pocket" aria-pressed="false"><span class="loc-pill-label">Pocket</span><span class="loc-pill-file" data-loc-file="pocket" hidden></span></button>
+              <button type="button" class="loc-pill-remove" data-loc-pill-remove="pocket" data-loc-remove="pocket" aria-label="Remove the Pocket logo" title="Remove the Pocket logo" hidden>×</button>
+            </div>
+          </div>
+          <!-- Print size picker: under the location pill row,
                centered in the middle column between the garment
                colors on the left and the logo colors on the right.
                Same segment and note as the old Print size step —
                that step is gone, so the designer is 8 steps. On
-               phones this sits directly under the image, before
-               the two color panels stacked below. -->
+               phones it stays in this same middle column, under
+               the pill row, between the two slim color panels. -->
           <div class="print-size-under" aria-labelledby="h-size">
             <h3 class="tool-title" id="h-size">Print size</h3>
             <p class="print-size-hint">How large the print can be — Standard fits most designs.</p>
@@ -1176,6 +1373,14 @@
             </div>
             <p class="seg-note" id="printSizeNote">Pocket prints are up to 4″ × 4″.</p>
           </div><!-- /.print-size-under -->
+          <!-- The "Your logo" detail/info box that used to sit here
+               (placement note + selected location's print area /
+               upload status line) was removed at the owner's
+               request. The location pill row under the shirt view
+               still carries each location's file name and its own
+               ×; the hidden file input stays, since the Upload
+               button on the shirt view opens it. -->
+          <input class="visually-hidden" type="file" id="artUpload" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml" />
           </div><!-- /.stage-col -->
           <!-- Logo colors: a separate panel on the RIGHT of the
                product image (the garment colors live in their own
@@ -1183,8 +1388,8 @@
                only, no description text, and the Custom color
                picker stays on this side. Same controls as the old
                Color step, only moved. The "Preview artwork in
-               white" toggle is NOT here — it stays in step 2 with
-               the logo tools. -->
+               white" toggle is NOT here — it stays with the logo
+               tools in step 1 (Print method). -->
           <div class="side-panel side-panel-logo tool-block" aria-labelledby="h-logo-color" id="logoColorBlock">
               <h3 class="tool-title" id="h-logo-color">Logo color</h3>
               <div class="logo-colors" role="group" aria-label="Logo color" id="logoColorGroup">
@@ -1211,8 +1416,8 @@
                step is truly complete, then a green check; tapping a chip
                jumps to that step. -->
           <nav class="progress" aria-label="Design steps — tap a step to jump to it">
-            <a class="pstep" data-pstep="1" href="#sec-product"><span class="pnum">1</span>Item</a>
-            <a class="pstep" data-pstep="2" href="#sec-method"><span class="pnum">2</span>Print method</a>
+            <a class="pstep" data-pstep="1" href="#sec-method"><span class="pnum">1</span>Print method</a>
+            <a class="pstep" data-pstep="2" href="#sec-product"><span class="pnum">2</span>Item</a>
             <a class="pstep" data-pstep="3" href="#sec-qty"><span class="pnum">3</span>Quantities</a>
             <a class="pstep" data-pstep="4" href="#sec-own"><span class="pnum">4</span>Own garment</a>
             <a class="pstep" data-pstep="5" href="#sec-info"><span class="pnum">5</span>Your information</a>
@@ -1221,35 +1426,13 @@
             <a class="pstep" data-pstep="8" href="#sec-save"><span class="pnum">8</span>Send</a>
           </nav>
           </div><!-- /.stage-unit -->
-          <div class="dark-hint" id="darkHint"><strong>Heads up:</strong> this artwork is black, so it will barely show on a dark shirt. Turn on <em>“Preview artwork in white”</em> in step 2, under the logo’s Remove button, to see how a white-ink version would look.</div>
+          <div class="dark-hint" id="darkHint"><strong>Heads up:</strong> this artwork is black, so it will barely show on a dark shirt.</div>
 
         </div>
 
         <div class="panel">
-          <section id="sec-product" data-step-sec="1" aria-labelledby="h-product">
-            <h2 id="h-product"><span class="step">1</span>Product</h2>
-            <div class="product-grid" role="group" aria-label="Product" id="productGrid">
-              <button type="button" data-product="tee" aria-pressed="true">T-shirt<small>Real photos — front &amp; back</small></button>
-              <button type="button" data-product="polo" aria-pressed="false">Polo<small>Generated blank preview — front &amp; back</small></button>
-              <button type="button" data-product="longsleeve" aria-pressed="false">Long sleeve<small>Generated blank preview — front &amp; back</small></button>
-              <button type="button" data-product="hoodie" aria-pressed="false">Hoodie<small>Generated blank preview — front &amp; back</small></button>
-              <button type="button" data-product="apron" aria-pressed="false">Apron<small>Denim, khaki, white &amp; light gray • one size</small></button>
-              <button type="button" data-product="hat" aria-pressed="false">Hat<small>5-panel trucker — front view • one size</small></button>
-            </div>
-            <div id="hatStyleWrap" hidden style="margin-top:12px;">
-              <h3 class="tool-title">Hat style — 5-panel trucker</h3>
-              <div class="seg" role="group" aria-label="Hat style" id="hatStyleSeg">
-                <button type="button" data-hatstyle="mesh" aria-pressed="true">Mesh Trucker (mesh back)</button>
-                <button type="button" data-hatstyle="closed" aria-pressed="false">Closed Trucker (solid front/back)</button>
-              </div>
-              <p class="seg-note">One size — adjustable snapback. Hats print on the front panel only, and the minimum is 12 hats.</p>
-            </div>
-            <div class="product-desc-display" id="productDescDisplay" hidden><span class="desc-label">About this item</span><span id="productDescText"></span></div>
-          </section>
-
-
-          <section id="sec-method" data-step-sec="2" aria-labelledby="h-method">
-            <h2 id="h-method"><span class="step">2</span>Print method</h2>
+          <section id="sec-method" data-step-sec="1" aria-labelledby="h-method">
+            <h2 id="h-method"><span class="step">1</span>Print method</h2>
             <p class="step-hint">Start here — pick how your design will be printed. This sets your minimum and how your price is worked out.</p>
             <div class="seg" role="group" aria-label="Print method" id="methodSeg">
               <button type="button" data-method="screen" aria-pressed="true">Screen printing</button>
@@ -1258,86 +1441,49 @@
             </div>
             <p class="seg-note" id="methodNote">Screen printing is the standard — minimum 24. Its prices are the print fees for the product you picked.</p>
             <div class="color-charge-note" id="colorChargeNote" role="note" hidden></div>
+            <!-- Step 2 (Item — the product picker) sits here, directly
+                 under the print method buttons and before the Your logo
+                 tools below. It stays its own numbered, collapsible
+                 step (data-step-sec="2", heading "2 Product"); it is
+                 placed inside step 1's section only so it renders in
+                 that spot — the steps are not merged or renumbered. -->
+            <section id="sec-product" data-step-sec="2" aria-labelledby="h-product">
+              <h2 id="h-product"><span class="step">2</span>Product</h2>
+              <div class="product-grid" role="group" aria-label="Product" id="productGrid">
+                <button type="button" data-product="tee" aria-pressed="true">T-shirt<small>Real photos — front &amp; back</small></button>
+                <button type="button" data-product="polo" aria-pressed="false">Polo<small>Generated blank preview — front &amp; back</small></button>
+                <button type="button" data-product="longsleeve" aria-pressed="false">Long sleeve<small>Generated blank preview — front &amp; back</small></button>
+                <button type="button" data-product="hoodie" aria-pressed="false">Hoodie<small>Generated blank preview — front &amp; back</small></button>
+                <button type="button" data-product="apron" aria-pressed="false">Apron<small>Denim, khaki, white &amp; light gray • one size</small></button>
+                <button type="button" data-product="hat" aria-pressed="false">Hat<small>5-panel trucker — front view • one size</small></button>
+              </div>
+              <div id="hatStyleWrap" hidden style="margin-top:12px;">
+                <h3 class="tool-title">Hat style — 5-panel trucker</h3>
+                <div class="seg" role="group" aria-label="Hat style" id="hatStyleSeg">
+                  <button type="button" data-hatstyle="mesh" aria-pressed="true">Mesh Trucker (mesh back)</button>
+                  <button type="button" data-hatstyle="closed" aria-pressed="false">Closed Trucker (solid front/back)</button>
+                </div>
+                <p class="seg-note">One size — adjustable snapback. Hats print on the front panel only, and the minimum is 12 hats.</p>
+              </div>
+              <div class="product-desc-display" id="productDescDisplay" hidden><span class="desc-label">About this item</span><span id="productDescText"></span></div>
+            </section>
+            <!-- Your logo tools: what remains of the Your logo block
+                 lives here in step 1 — the Remove Background /
+                 Restore Background buttons and attach-original. (The
+                 per-location upload buttons stay in the preview, on
+                 and under the shirt view.) -->
             <h3 class="tool-title" style="margin-top:18px;">Your logo</h3>
-            <p class="seg-note" id="placementNote">Print one location or all three — each side keeps its own artwork, size, and position.</p>
-            <div class="loc-uploads" id="locUploads" aria-label="Logo uploaded for each print location">
-              <div class="loc-upload-row" data-loc-row="front">
-                <div class="loc-upload-info">
-                  <span class="loc-upload-name" data-loc-name>Front</span>
-                  <span class="loc-upload-size" data-loc-size>Print area: up to 12″ × 16″</span>
-                  <span class="loc-upload-status" data-loc-status>No logo uploaded for this location yet — upload one here.</span>
-                  <span class="loc-color-note" data-loc-color-note hidden></span>
-                </div>
-                <div class="loc-upload-actions">
-                  <button type="button" class="btn small loc-upload-btn" data-loc-upload="front">Upload</button>
-                  <button type="button" class="loc-remove-btn" data-loc-remove="front" aria-label="Remove the Front logo" title="Remove this location's logo" hidden>×</button>
-                </div>
-              </div>
-              <div class="loc-upload-row" data-loc-row="back">
-                <div class="loc-upload-info">
-                  <span class="loc-upload-name" data-loc-name>Back</span>
-                  <span class="loc-upload-size" data-loc-size>Print area: up to 12″ × 16″</span>
-                  <span class="loc-upload-status" data-loc-status>No logo uploaded for this location yet — upload one here.</span>
-                  <span class="loc-color-note" data-loc-color-note hidden></span>
-                </div>
-                <div class="loc-upload-actions">
-                  <button type="button" class="btn small loc-upload-btn" data-loc-upload="back">Upload</button>
-                  <button type="button" class="loc-remove-btn" data-loc-remove="back" aria-label="Remove the Back logo" title="Remove this location's logo" hidden>×</button>
-                </div>
-              </div>
-              <div class="loc-upload-row" data-loc-row="pocket">
-                <div class="loc-upload-info">
-                  <span class="loc-upload-name" data-loc-name>Pocket</span>
-                  <span class="loc-upload-size" data-loc-size>Print area: up to 4″ × 4″</span>
-                  <span class="loc-upload-status" data-loc-status>No logo uploaded for this location yet — upload one here.</span>
-                  <span class="loc-color-note" data-loc-color-note hidden></span>
-                </div>
-                <div class="loc-upload-actions">
-                  <button type="button" class="btn small loc-upload-btn" data-loc-upload="pocket">Upload</button>
-                  <button type="button" class="loc-remove-btn" data-loc-remove="pocket" aria-label="Remove the Pocket logo" title="Remove this location's logo" hidden>×</button>
-                </div>
-              </div>
-            </div>
-            <input class="visually-hidden" type="file" id="artUpload" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml" />
-            <div class="comment-box">
-              <label for="artComment">Add a comment about your logo</label>
-              <textarea id="artComment" rows="3" placeholder="Anything production should know — for example: keep the lettering exactly as-is, match a specific color, or center it on the chest."></textarea>
-              <p class="seg-note" style="margin-top:6px;">Your comment is included in the design summary in step 6.</p>
-            </div>
-            <div class="btn-row remove-row" style="margin-top:0">
-              <button type="button" class="btn small" id="removeArtBtn">Remove</button>
-              <button type="button" class="btn small" id="centerBtn">Center it</button>
-            </div>
-            <div class="bg-tools" id="bgTools" aria-label="Artwork size and background removal tools">
-              <h3 class="tool-title" id="h-artwork-size">Artwork size</h3>
-              <div id="artControls">
-                <p class="dims" id="dimsLine"></p>
-                <label for="sizeSlider" style="font-weight:600; font-size:14.5px; display:block; margin-top:12px;">Artwork size</label>
-                <input type="range" id="sizeSlider" min="10" max="100" step="1" value="82" />
-                <div class="range-label"><span>Smaller</span><span>Bigger</span></div>
-                <div class="toggle-row">
-                  <button type="button" id="whiteToggle" aria-pressed="false" aria-label="Preview artwork in white"></button>
-                  <label for="whiteToggle">Preview artwork in white <span style="color:var(--muted); font-weight:500">(for dark shirts)</span></label>
-                </div>
-              </div>
+            <div class="bg-tools" id="bgTools" aria-label="Background removal tools">
               <h3 class="tool-title" id="h-bg">Background removal</h3>
-              <p class="seg-note" style="margin:0 0 8px;">Uploaded a logo that came with a background — a white box around it, for example? Remove it here so just the logo sits on your item. Upload a logo for this location first — the Remove Background button below turns on as soon as one is here.</p>
-              <label for="bgTol" style="font-weight:600; font-size:14.5px; display:block;">Removal strength</label>
-              <input type="range" id="bgTol" min="15" max="140" step="1" value="60" disabled />
-              <div class="range-label"><span>Gentle</span><span>Stronger</span></div>
               <div class="btn-row bg-btn-row">
                 <button type="button" class="btn small" id="removeBgBtn" disabled>Remove Background</button>
                 <button type="button" class="btn small" id="restoreBgBtn" disabled>Restore Background</button>
               </div>
-              <p class="bg-tip">Tip: for the best result, make sure your logo has a solid color background.</p>
-              <p class="tool-status" id="toolStatus" aria-live="polite"></p>
-              <p class="seg-note">How it works: it removes the background that’s connected to the edges of the picture, following its shade as it goes — so a solid white or solid-color background comes off cleanly, even with uneven light or a soft shadow across it. Busy photo backgrounds won’t cut out cleanly here — for those, the original file (AI / PSD / PDF) is what production would use.</p>
             </div>
             <p class="error" id="uploadError"></p>
             <p class="file-name" id="artFileName"></p>
-            <p class="seg-note">PNG, JPG, or SVG, up to <span id="maxMbNote">20</span> MB. A transparent PNG works best. Have the original in AI, PSD, or PDF? Attach it too — that’s the file production would print from.</p>
-            <div class="btn-row">
-              <label class="btn small" for="origUpload">Attach original (AI / PSD / PDF)</label>
+            <div class="btn-row centered">
+              <label class="btn small brown" for="origUpload">Attach original (AI / PSD / PDF)</label>
               <input class="visually-hidden" type="file" id="origUpload" accept=".ai,.psd,.pdf" />
             </div>
             <p class="file-name" id="origFileName"></p>
@@ -1420,9 +1566,15 @@
               <label for="custName">Full name *</label>
               <input type="text" id="custName" placeholder="Your full name" autocomplete="name" required aria-required="true" />
             </div>
-            <div class="info-field">
-              <label for="custCompany">Company name <span class="info-optional">(optional)</span></label>
-              <input type="text" id="custCompany" placeholder="Company name — leave blank if none" autocomplete="organization" />
+            <div class="info-grid">
+              <div class="info-field">
+                <label for="custCompany">Company name <span class="info-optional">(optional)</span></label>
+                <input type="text" id="custCompany" placeholder="Company name — leave blank if none" autocomplete="organization" />
+              </div>
+              <div class="info-field">
+                <label for="custProject">Project name <span class="info-optional">(optional)</span></label>
+                <input type="text" id="custProject" placeholder="Project name — leave blank if none" />
+              </div>
             </div>
             <div class="info-grid">
               <div class="info-field">
@@ -1474,15 +1626,30 @@
 
           <section id="sec-agree" data-step-sec="7" aria-labelledby="h-agree">
             <h2 id="h-agree"><span class="step">7</span>Confirm your order</h2>
-            <p class="step-hint">Read the recap, check it matches what you want, then tick the box.</p>
+            <p class="step-hint">Read the recap, check it matches what you want, then tick the boxes.</p>
             <div class="agree-box" id="agreeBox">
               <p class="agree-recap" id="policiesDisplay" hidden style="margin-bottom:10px;"></p>
               <p class="agree-recap" id="agreeRecap" tabindex="0" aria-live="polite"></p>
+              <button type="button" class="terms-toggle" id="termsToggle" aria-expanded="false" aria-controls="termsPanel">Terms and Conditions<span class="terms-toggle-sign" aria-hidden="true"></span></button>
+              <div class="terms-box" id="termsPanel" hidden>
+                <ul class="terms-list">
+                  <li><strong>Turnaround:</strong> 2 days for orders of 24 items only. For larger orders, turnaround varies.</li>
+                  <li><strong>Our mistake:</strong> If we make a mistake on your order, we will do a return.</li>
+                  <li><strong>Lost in shipping:</strong> We are not responsible for items lost in shipping.</li>
+                  <li><strong>Late work:</strong> If we don&rsquo;t finish your work on time, we will refund you.</li>
+                  <li><strong>Your design:</strong> You approve the design exactly as shown — what you see is what prints.</li>
+                  <li><strong>Your artwork:</strong> You must own your logo/artwork, or have the right to use it.</li>
+                </ul>
+              </div>
               <label class="agree-label" for="agreeCheck">
                 <input type="checkbox" id="agreeCheck" />
                 <span>I agree — my sizing, color, and what I&rsquo;m purchasing are correct. I&rsquo;ve checked the product, the sizes &amp; quantities, the color, the print locations and artwork sizes above, and the price per item.</span>
               </label>
-              <p class="agree-status wait" id="agreeStatus">Please tick the box above to confirm before sending your quote.</p>
+              <label class="agree-label terms-agree-label" for="termsCheck">
+                <input type="checkbox" id="termsCheck" />
+                <span>I agree to the Terms and Conditions</span>
+              </label>
+              <p class="agree-status wait" id="agreeStatus">Please tick both boxes above to confirm before sending your quote.</p>
             </div>
           </section>
 
@@ -1612,18 +1779,39 @@
           if (p === "pocket") return state.product !== "apron";
           return true;
         }
-        /* Remove one location's placed artwork for good (same
-           cleanup as the per-row × button in step 2). */
-        function clearLocArtwork(p) {
+        /* An item change that makes a location unavailable takes
+           that location off the order — it can't be printed or
+           priced on this item — but its artwork is REMEMBERED, not
+           deleted: the whole design (logo file, placement and
+           size) is set aside in state.savedDesigns with its blob
+           URL kept alive, and restoreLoc() below brings it back
+           exactly as it was when an item offers the location
+           again. Only the per-row × button and the Remove button
+           in the logo block delete a logo for good. */
+        function deselectLoc(p) {
           var dd = state.designs[p];
-          if (dd && dd.blob) URL.revokeObjectURL(dd.src);
+          if (!dd) return;
+          var old = state.savedDesigns[p];
+          if (old && old.blob && old !== dd) URL.revokeObjectURL(old.src);
+          state.savedDesigns[p] = dd;
           state.designs[p] = null;
         }
-        /* An item change that makes a location unavailable clears
-           that location's artwork with it — a location the item
-           doesn't offer can't be printed or priced. */
-        function deselectLoc(p) {
-          clearLocArtwork(p);
+        /* Bring back a remembered design when its location is
+           offered again: same logo, same placement and size —
+           clamped to the new item's print area the same way a
+           fresh upload is clamped, so it can never sit outside
+           it. The design keeps its counted colors and any
+           background removal, so pricing picks up right where
+           it left off. */
+        function restoreLoc(p) {
+          var dd = state.savedDesigns[p];
+          if (!dd || state.designs[p]) return;
+          state.savedDesigns[p] = null;
+          state.designs[p] = dd;
+          var originPlacement = state.placement;
+          state.placement = p;
+          clampDesign(dd);
+          state.placement = originPlacement;
         }
         var PLACEHOLDER_PATHS = {
           polo: "M70 18 L42 28 L24 54 L44 64 L44 142 L156 142 L156 64 L176 54 L158 28 L130 18 C124 30 118 36 112 40 L100 52 L88 40 C82 36 76 30 70 18 Z",
@@ -1985,7 +2173,7 @@
         };
         var PLACEMENT_LABEL = { front: "Front", back: "Back", pocket: "Pocket" };
         /* Display name for a print location on the CURRENT product:
-           the Polo's pocket location is its LEFT pocket — the Step 2
+           the Polo's pocket location is its LEFT pocket — the logo-block
            row, the price breakdown, the Final summary (step 6) and
            the sent quote all call it "Left pocket" while a Polo is
            picked, so the owner knows exactly where it goes. Every
@@ -2056,12 +2244,20 @@
           color: "white",
           placement: "front",
           /* Print locations are chosen by uploading a logo to a
-             location's row in step 2 — there are no location toggle
+             location's row in the Your logo block under the print size — there are no location toggle
              buttons. Every location the current item offers always
              shows its row; a location with no logo uploaded is not
              printed and not charged. */
           printSize: "standard",
           designs: { front: null, back: null, pocket: null },
+          /* Artwork REMEMBERED for locations the current item does
+             not offer: when an item change unpicks a location, its
+             design (logo file, placement and size) is set aside
+             here — not deleted — and restored exactly as it was if
+             a later item offers that location again. Only the
+             per-row × button and the Remove button delete a logo
+             for good. */
+          savedDesigns: { front: null, back: null, pocket: null },
           originalName: "",
           originalFile: null,
           artComment: "",
@@ -2071,6 +2267,7 @@
           customerEmail: "",
           custName: "",
           custCompany: "",
+          custProject: "",
           custPhone: "",
           custStreet: "",
           custCity: "",
@@ -2081,8 +2278,12 @@
           rushWanted: false,
           rushDate: "",
           agreed: false,
+          termsAgreed: false,
           sizes: { S: 0, M: 0, L: 0, XL: 0, "2XL": 0, "One size": 0 }
         };
+        /* Step 7 is complete only when BOTH boxes are ticked: the
+           order agreement and "I agree to the Terms and Conditions". */
+        function agreementComplete() { return !!state.agreed && !!state.termsAgreed; }
         function currentProduct() { return PRODUCTS[state.product] || PRODUCTS.tee; }
 
         /* Owner prices entered 2026-11-03 — customers see what they
@@ -2151,7 +2352,7 @@
           textNumber: "562.314.2397",
           email: "oneonegraphics@gmail.com",
           hours: "Mon–Thu 8am–5pm · Fri 9am–5pm · Closed Sat–Sun",
-          turnaround: "About 2 days — some projects take longer depending on the size of the order",
+          turnaround: "2 days for orders of 24 items only; for larger orders it varies",
           location: "Los Angeles, CA"
         };
         /* K: print-area size overrides per product, in inches:
@@ -2252,10 +2453,6 @@
         var artFileName = document.getElementById("artFileName");
         var origFileName = document.getElementById("origFileName");
         var uploadError = document.getElementById("uploadError");
-        var dimsLine = document.getElementById("dimsLine");
-        var artControls = document.getElementById("artControls");
-        var sizeSlider = document.getElementById("sizeSlider");
-        var whiteToggle = document.getElementById("whiteToggle");
         var summaryBox = document.getElementById("summaryBox");
         var totalLine = document.getElementById("totalLine");
         var printSizeSeg = document.getElementById("printSizeSeg");
@@ -2272,6 +2469,7 @@
         var ownEmailEl = document.getElementById("ownEmail");
         var custNameEl = document.getElementById("custName");
         var custCompanyEl = document.getElementById("custCompany");
+        var custProjectEl = document.getElementById("custProject");
         var custEmailEl = document.getElementById("custEmail");
         var custPhoneEl = document.getElementById("custPhone");
         var custStreetEl = document.getElementById("custStreet");
@@ -2287,11 +2485,8 @@
         var agreeBox = document.getElementById("agreeBox");
         var agreeRecap = document.getElementById("agreeRecap");
         var agreeStatus = document.getElementById("agreeStatus");
-        var artCommentEl = document.getElementById("artComment");
         var logoColorInput = document.getElementById("logoColorInput");
         var logoColorHex = document.getElementById("logoColorHex");
-        var toolStatus = document.getElementById("toolStatus");
-        var bgTolSlider = document.getElementById("bgTol");
         var removeBgBtn = document.getElementById("removeBgBtn");
         var restoreBgBtn = document.getElementById("restoreBgBtn");
         var bgToolsEl = document.getElementById("bgTools");
@@ -2462,7 +2657,7 @@
           return extraColorCount(d) * EXTRA_COLOR_FEE;
         }
         /* Locations whose Screen logo carries an extra-color
-           charge — drives the informational Step 2 note. */
+           charge — drives the informational Step 1 note. */
         function screenColorChargeLocations() {
           if (state.method !== "screen") return [];
           var out = [];
@@ -2967,9 +3162,6 @@
           var d = currentDesign();
           areaEmpty.hidden = !!d || state.placement === "pocket" || state.product === "apron";
           artworkEl.hidden = !d;
-          artControls.style.display = d ? "" : "none";
-          document.getElementById("removeArtBtn").disabled = !d;
-          document.getElementById("centerBtn").disabled = !d;
           if (d) {
             var dispSrc = displaySrc(d);
             if (lastArtSrc !== dispSrc) { artworkImg.setAttribute("src", dispSrc); lastArtSrc = dispSrc; }
@@ -2978,27 +3170,12 @@
             artworkEl.style.left = d.x + "%";
             artworkEl.style.top = d.y + "%";
             artworkEl.style.width = d.w + "%";
-            whiteToggle.setAttribute("aria-pressed", d.white && !d.colorHex ? "true" : "false");
-            if (document.activeElement !== sizeSlider) sizeSlider.value = Math.round(d.w);
             artFileName.innerHTML = "On the " + placementLabel(state.placement).toLowerCase() + ": <strong></strong>";
             artFileName.querySelector("strong").textContent = d.name;
             var wIn = (d.w / 100) * a.maxW;
             var hIn = wIn / d.aspect;
             artSizeBadge.textContent = fmt(wIn) + "″ wide × " + fmt(hIn) + "″ tall";
             artworkEl.classList.toggle("resizing", !!(typeof drag !== "undefined" && drag && drag.mode === "resize"));
-            var qHtml;
-            if (d.isVector) {
-              qHtml = '<span class="quality good">Vector file — scales cleanly at any size</span>';
-            } else if (d.naturalW) {
-              var effW = (d.colorSrc || d.bgSrc) && d.processedW ? d.processedW : d.naturalW;
-              var dpi = Math.round(effW / wIn);
-              var cls = dpi >= 250 ? "good" : dpi >= 150 ? "warn" : "bad";
-              var word = dpi >= 250 ? "Good quality" : dpi >= 150 ? "Okay quality" : "Low quality — may print soft";
-              qHtml = '<span class="quality ' + cls + '">' + word + " (" + dpi + " DPI at this size)</span>";
-            } else {
-              qHtml = "";
-            }
-            dimsLine.innerHTML = "Print size: <strong>" + fmt(wIn) + "″ wide × " + fmt(hIn) + "″ tall</strong> — this updates live as you resize, and it’s the size that will print. " + qHtml;
             /* logo tools state for the design on this tab */
             document.querySelectorAll("[data-logo-color]").forEach(function (b) {
               var v = b.getAttribute("data-logo-color");
@@ -3006,28 +3183,21 @@
             });
             if (document.activeElement !== logoColorInput && d.colorHex) logoColorInput.value = d.colorHex;
             logoColorHex.textContent = d.colorHex ? "Current: " + d.colorHex.toUpperCase() : "Current: original colors";
-            whiteToggle.disabled = !!d.colorHex;
-            if (document.activeElement !== bgTolSlider) bgTolSlider.value = d.bgTol || 60;
-            /* Background removal lives ONLY in step 2, under the
-               Remove button, and the block is always visible so the
+            /* Background removal lives ONLY in the Your logo block
+               in step 1, and the block is always visible so the
                buttons can be seen without uploading first. Remove
                Background is enabled while this location has a logo;
                Restore Background is enabled only after a removal has
-               been applied — and greys out again once restored. */
+               been applied — and greys out again once restored.
+               Removal always uses the default strength (d.bgTol, 60). */
             if (bgToolsEl) bgToolsEl.hidden = false;
             removeBgBtn.hidden = false;
             removeBgBtn.disabled = !!d.isVector;
             restoreBgBtn.hidden = false;
             restoreBgBtn.disabled = !d.bgRemoved;
-            bgTolSlider.disabled = false;
-            toolStatus.textContent = d.toolNote || (d.isVector
-              ? "This is a vector (SVG) file — it normally already has a transparent background."
-              : (d.bgRemoved ? "Background removed in this preview." : ""));
-            toolStatus.classList.toggle("working", /…$/.test(d.toolNote || ""));
           } else {
             lastArtSrc = null;
-            artFileName.textContent = "Nothing on the " + placementLabel(state.placement).toLowerCase() + " yet.";
-            dimsLine.innerHTML = "";
+            artFileName.textContent = "";
             /* No logo on this location yet: keep the background
                removal block visible (so the buttons are there to be
                seen) but greyed out until a logo is uploaded here. */
@@ -3036,9 +3206,6 @@
             removeBgBtn.disabled = true;
             restoreBgBtn.hidden = false;
             restoreBgBtn.disabled = true;
-            bgTolSlider.disabled = true;
-            toolStatus.textContent = "Upload a logo for this location above — Remove Background turns on as soon as one is here.";
-            toolStatus.classList.remove("working");
           }
 
           /* dark-shirt hint: black artwork (not flipped white) on black/navy only —
@@ -3084,66 +3251,113 @@
             }
           }
 
-          /* Per-location uploads (step 2): one row per location —
-             the rows ARE the locations now (no Front / Back / Pocket
-             tab buttons). Each row names its location, shows that
-             location's corresponding print size (Front / Back follow
-             the Standard / Oversize choice under the preview; Pocket / Left
-             pocket is its fixed small area), shows the file uploaded
-             for THAT location — or plainly says no logo is uploaded
-             for it yet — and carries that location's own Upload
-             button plus an X that removes that location's logo.
-             This is what keeps a logo from seeming to "disappear":
-             every location's upload stays listed here, and the Logo
-             tools (step 2, under Remove) work on the artwork of whichever location
-             is selected (tap a row to select it). Rows always show
-             for every location the product offers (e.g. the Polo
-             front and the apron back are never offered, so they
-             never get a row); uploading a logo to a row is how a
-             location is chosen — no logo, no print, no charge. */
-          document.querySelectorAll("[data-loc-row]").forEach(function (row) {
-            var p = row.getAttribute("data-loc-row");
-            row.hidden = !locEnabled(p);
-            row.classList.toggle("current", state.placement === p);
-            var nameEl = row.querySelector("[data-loc-name]");
-            if (nameEl) nameEl.textContent = placementLabel(p);
-            var sizeEl = row.querySelector("[data-loc-size]");
-            if (sizeEl) {
-              var la = areaFor(p, state.printSize);
-              sizeEl.textContent = "Print area: up to " + la.maxW + "″ × " + la.maxH + "″";
-            }
+          /* Per-location uploads (pill row directly under the shirt
+             view, detail line in the Your logo block below the print
+             size picker):
+             one pill per location in a single row, styled exactly
+             like the print-method segment — a pill shows only for
+             every location the product offers (e.g. the Polo front
+             and the apron back are never offered, so they never get
+             a pill), and the pill for the selected location is the
+             pressed (brown) one. Tapping a pill ONLY selects that
+             location and shows it on the preview — it never opens
+             the file picker. The detail line under the print size
+             picker speaks
+             for the SELECTED location: its corresponding print size
+             (Front / Back follow the Standard / Oversize choice
+             under the preview; Pocket / Left pocket is its fixed
+             small area), the file uploaded for it — or plainly that
+             no logo is uploaded for it yet — and an X that removes
+             that location's logo. The Upload button ON the shirt
+             view is the only control that opens the file picker,
+             and it shows only while the selected location has no
+             logo yet. The Logo tools
+             (in step 1, under Remove) work on the artwork of
+             whichever location is selected; a logo placed on a
+             location is what prices it — no logo, no print, no
+             charge. */
+          document.querySelectorAll("[data-loc-select]").forEach(function (btn) {
+            var p = btn.getAttribute("data-loc-select");
+            var pill = btn.closest("[data-loc-pill]");
             var dd = state.designs[p];
-            var st = row.querySelector("[data-loc-status]");
-            if (st) {
-              if (dd && dd.name) {
-                st.textContent = "";
-                st.appendChild(document.createTextNode("Logo uploaded: "));
-                var strong = document.createElement("strong");
-                strong.textContent = dd.name;
-                st.appendChild(strong);
-              } else {
-                st.textContent = "No logo uploaded for this location yet — upload one here.";
+            var hasLogo = !!(dd && dd.name);
+            if (pill) pill.hidden = !locEnabled(p);
+            btn.setAttribute("aria-pressed", state.placement === p ? "true" : "false");
+            if (pill) pill.classList.toggle("is-selected", state.placement === p);
+            var labelEl = btn.querySelector(".loc-pill-label");
+            if (labelEl) labelEl.textContent = placementLabel(p);
+            var fileEl = btn.querySelector("[data-loc-file]");
+            if (fileEl) {
+              fileEl.hidden = !hasLogo;
+              fileEl.textContent = hasLogo ? dd.name : "";
+            }
+            btn.title = hasLogo
+              ? placementLabel(p) + " logo: " + dd.name + " — tap to view it on the item"
+              : "Tap to view the " + placementLabel(p) + " location";
+            /* The pill's own ×: shown only while THIS location has
+               a logo; it removes that location's logo only (wired
+               with the other [data-loc-remove] buttons below). Its
+               data-loc-remove stays fixed to its own location —
+               unlike the detail line's ×, which follows the
+               selected location. */
+            if (pill) {
+              var pillRm = pill.querySelector("[data-loc-pill-remove]");
+              if (pillRm) {
+                pillRm.hidden = !hasLogo;
+                pillRm.setAttribute("aria-label", "Remove the " + placementLabel(p) + " logo");
+                pillRm.title = "Remove the " + placementLabel(p) + " logo";
               }
             }
-            var noteEl = row.querySelector("[data-loc-color-note]");
-            if (noteEl) {
-              var rowFee = dd ? extraColorFeeFor(dd) : 0;
-              var showRowNote = !!dd && rowFee > 0;
-              noteEl.hidden = !showRowNote;
-              noteEl.textContent = showRowNote
-                ? "This logo has " + logoColorCount(dd) + " colors — " + extraColorCount(dd) + " extra color" + (extraColorCount(dd) === 1 ? "" : "s") + " add " + money(rowFee) + " per item on " + placementLabel(p) + "."
-                : "";
-            }
-            var lbtn = row.querySelector("[data-loc-upload]");
-            if (lbtn) lbtn.textContent = dd ? "Replace" : "Upload";
-            var rmBtn = row.querySelector("[data-loc-remove]");
-            if (rmBtn) {
-              rmBtn.hidden = !(dd && dd.name);
-              rmBtn.setAttribute("aria-label", "Remove the " + placementLabel(p) + " logo");
-            }
           });
+          var curP = state.placement;
+          var curDd = state.designs[curP];
+          var sizeEl = document.getElementById("locDetailSize");
+          if (sizeEl) {
+            var la = areaFor(curP, state.printSize);
+            sizeEl.textContent = placementLabel(curP) + " print area: up to " + la.maxW + "″ × " + la.maxH + "″";
+          }
+          var st = document.getElementById("locDetailStatus");
+          if (st) {
+            if (curDd && curDd.name) {
+              st.textContent = "";
+              st.appendChild(document.createTextNode("Logo uploaded: "));
+              var strong = document.createElement("strong");
+              strong.textContent = curDd.name;
+              st.appendChild(strong);
+            } else {
+              st.textContent = "No logo uploaded for this location yet — tap the Upload button on the shirt.";
+            }
+          }
+          var noteEl = document.getElementById("locDetailNote");
+          if (noteEl) {
+            var rowFee = curDd ? extraColorFeeFor(curDd) : 0;
+            var showRowNote = !!curDd && rowFee > 0;
+            noteEl.hidden = !showRowNote;
+            noteEl.textContent = showRowNote
+              ? "This logo has " + logoColorCount(curDd) + " colors — " + extraColorCount(curDd) + " extra color" + (extraColorCount(curDd) === 1 ? "" : "s") + " add " + money(rowFee) + " per item on " + placementLabel(curP) + "."
+              : "";
+          }
+          var rmBtn = document.getElementById("locDetailRemove");
+          if (rmBtn) {
+            rmBtn.setAttribute("data-loc-remove", curP);
+            rmBtn.hidden = !(curDd && curDd.name);
+            rmBtn.setAttribute("aria-label", "Remove the " + placementLabel(curP) + " logo");
+          }
+          /* The Upload button ON the shirt view: shown only while
+             the SELECTED location has no logo yet — it disappears
+             as soon as a logo is uploaded for that location, and
+             comes back when the logo is removed with a ×. It is
+             the only control that opens the file picker (wired
+             below), and it uploads to the selected location. */
+          var upBtn = document.getElementById("stageUploadBtn");
+          if (upBtn) {
+            var curHasLogo = !!(curDd && curDd.name);
+            upBtn.hidden = curHasLogo;
+            upBtn.textContent = "Upload " + placementLabel(curP) + " logo";
+            upBtn.setAttribute("aria-label", "Upload the " + placementLabel(curP) + " logo");
+          }
 
-          /* Print method (step 2): pressed state + the note under it. */
+          /* Print method (step 1): pressed state + the note under it. */
           document.querySelectorAll("[data-method]").forEach(function (b) {
             b.setAttribute("aria-pressed", b.getAttribute("data-method") === state.method ? "true" : "false");
           });
@@ -3153,7 +3367,7 @@
               ? "Screen printing is the standard — minimum " + effectiveMinQty() + ". " + methodPriceText("screen") + " — your price updates live below."
               : METHOD_LABEL[state.method] + " — minimum " + effectiveMinQty() + ". " + methodPriceText(state.method) + " — your price updates live below.";
           }
-          /* Extra-color charge note (Step 2): informational only,
+          /* Extra-color charge note (Step 1): informational only,
              shown while Screen printing is picked and a placed
              logo has more than the 2 included colors. Nothing is
              blocked — the note just explains the per-item charge
@@ -3394,14 +3608,14 @@
                 (priced.complete
                   ? "Your order total is " + money(priced.total) + " incl. tax and estimated shipping — see “Your price” below. " +
                     (priced.combo && priced.combo.assumed
-                      ? "No print fee is included yet — print fees are charged only for locations where you place artwork in step 2. "
+                      ? "No print fee is included yet — print fees are charged only for locations where you place artwork with the Upload button on the shirt. "
                       : "")
                   : "") +
-                (state.agreed && rushDateOk() && customerEmailValid() && customerInfoComplete()
+                (agreementComplete() && rushDateOk() && customerEmailValid() && customerInfoComplete()
                   ? "You’ve confirmed in step 7 and your information in step 5 is complete, so Copy and GO TO CHECKOUT in step 8 are unlocked."
-                  : state.agreed && rushDateOk()
+                  : agreementComplete() && rushDateOk()
                   ? "You’ve confirmed in step 7, so Copy is unlocked — GO TO CHECKOUT in step 8 unlocks once your email and your information in step 5 are complete."
-                  : state.agreed && !rushDateOk()
+                  : agreementComplete() && !rushDateOk()
                   ? "You’ve confirmed in step 7, but Copy and GO TO CHECKOUT in step 8 stay locked until you pick your rush date — a rush date is required for rush orders."
                   : !rushDateOk()
                   ? "Two steps left: tick the agreement in step 7 and pick your rush date — a rush date is required for rush orders."
@@ -3424,7 +3638,7 @@
           return best;
         }
         /* Auto-detection: print locations come from artwork actually placed
-           on the Front / Back / Pocket tabs in Step 2 — never re-asked. */
+           on the Front / Back / Pocket rows in the logo block — never re-asked. */
         function detectedLocations() {
           return ["front", "back", "pocket"].filter(function (p) {
             /* A location the product doesn't offer never counts,
@@ -3481,7 +3695,7 @@
           if (f == null) f = activePricing()[FEE_KEY[p]];
           return f;
         }
-        /* Those fees worded for the step 2 note: one flat price when
+        /* Those fees worded for the step 1 note: one flat price when
            every location costs the same (DTF $13, Embroidery
            single-color $11.50), otherwise the Front / Back / Pocket
            list (Screen printing). */
@@ -3507,7 +3721,7 @@
           var effectiveBase = state.ownGarment ? 0 : ap.base;
           if (!state.ownGarment && ap.base == null) missing.push(activeBaseLabel());
           combo.locs.forEach(function (p) {
-            /* Print method (step 2, priced in Shop settings H): a
+            /* Print method (step 1, priced in Shop settings H): a
                method fee the owner typed replaces the regular print
                fee for that location; a blank method fee falls back
                to the regular fee. Screen printing always uses the
@@ -3580,15 +3794,15 @@
           var detected = detectedCombo();
           if (detectedEl) {
             if (!placed.length) {
-              detectedEl.innerHTML = '<span class="detected-label">Detected print locations</span>None yet — place artwork on Front, Back, or ' + placementLabel("pocket") + ' in Step 2 and it will appear here automatically.<span class="detected-sub">No artwork placed yet — no print fee is charged. Place artwork on a location and its print fee is added to your price automatically.</span>';
+              detectedEl.innerHTML = '<span class="detected-label">Detected print locations</span>None yet — place artwork on Front, Back, or ' + placementLabel("pocket") + ' with the Upload button on the shirt and it will appear here automatically.<span class="detected-sub">No artwork placed yet — no print fee is charged. Place artwork on a location and its print fee is added to your price automatically.</span>';
             } else {
               var names = placed.map(function (p) { return placementLabel(p); }).join(" + ");
-              detectedEl.innerHTML = '<span class="detected-label">Detected print locations</span>' + names + '<span class="detected-sub">Printing: ' + detected.label + ' · ' + METHOD_LABEL[state.method] + ' — picked up automatically from Step 2.</span>';
+              detectedEl.innerHTML = '<span class="detected-label">Detected print locations</span>' + names + '<span class="detected-sub">Printing: ' + detected.label + ' · ' + METHOD_LABEL[state.method] + ' — picked up automatically from the Upload button on the shirt.</span>';
             }
           }
           comboHint.textContent = placed.length
-            ? "Auto-detected from your artwork in Step 2: " + placed.map(function (p) { return placementLabel(p); }).join(", ") + ". Add or remove artwork on any location and this price updates automatically — no need to pick locations again."
-            : "Your price below works from your quantities and includes no print fee yet — print fees are charged only for locations with artwork. Place artwork on Front, Back, or " + placementLabel("pocket") + " in step 2 and that location's print fee is added automatically.";
+            ? "Auto-detected from your artwork placed with the Upload button on the shirt: " + placed.map(function (p) { return placementLabel(p); }).join(", ") + ". Add or remove artwork on any location and this price updates automatically — no need to pick locations again."
+            : "Your price below works from your quantities and includes no print fee yet — print fees are charged only for locations with artwork. Place artwork on Front, Back, or " + placementLabel("pocket") + " with the Upload button on the shirt and that location's print fee is added automatically.";
           var html = "";
           html += '<div class="row"><span style="font-weight:800; letter-spacing:0.04em; text-transform:uppercase; font-size:12px;">Your price — shown live</span><span></span></div>';
           html += row("Product", currentProduct().label);
@@ -3705,7 +3919,7 @@
             names.forEach(function (n) { out.push("  - " + n); });
             if (state.originalName) out.push("  - Original file: " + state.originalName);
           } else {
-            out.push("No logo file was uploaded in step 2.");
+            out.push("No logo file was uploaded in the Your logo block under the print size.");
           }
           return out;
         }
@@ -3725,6 +3939,7 @@
           sectionHead(lines, "CUSTOMER");
           lines.push("Customer name: " + ((state.custName || "").trim() ? state.custName.trim() : "not provided yet"));
           if ((state.custCompany || "").trim()) lines.push("Company name: " + state.custCompany.trim());
+          if ((state.custProject || "").trim()) lines.push("Project name: " + state.custProject.trim());
           lines.push("Customer email: " + (effectiveCustomerEmail() ? effectiveCustomerEmail() : "customer email not provided yet"));
           lines.push("Customer phone: " + ((state.custPhone || "").trim() ? state.custPhone.trim() : "not provided yet"));
           var shipParts = [state.custStreet, state.custCity, state.custState, state.custZip].map(function (v) { return (v || "").trim(); }).filter(function (v) { return v; });
@@ -3841,7 +4056,8 @@
             }
           }
           sectionHead(lines, "CONFIRMATION");
-          lines.push(state.agreed ? "Customer agreement: CONFIRMED — customer agrees sizing, color, and what they are purchasing are correct." : "Customer agreement: NOT confirmed yet — customer has not ticked the agreement box in Step 7.");
+          lines.push(agreementComplete() ? "Customer agreement: CONFIRMED — customer agrees sizing, color, and what they are purchasing are correct." : "Customer agreement: NOT confirmed yet — customer has not ticked the agreement box in Step 7.");
+          lines.push(state.termsAgreed ? "Terms and Conditions: AGREED — customer agreed to the Terms and Conditions in Step 7." : "Terms and Conditions: NOT agreed yet — customer has not ticked the Terms and Conditions box in Step 7.");
           if (state.ownGarment) lines.push("Own-garment shipping agreement: Customer understands the shipping address will be emailed after the order is received — Shipping address to be emailed after order received.");
           sectionHead(lines, "SHOP & NEXT STEP");
           var bizParts = [];
@@ -3966,12 +4182,12 @@
             agreeRecap.appendChild(document.createElement("br"));
             agreeRecap.appendChild(shipSpan);
           }
-          agreeBox.classList.toggle("checked", !!state.agreed);
+          agreeBox.classList.toggle("checked", agreementComplete());
           var rushOk = rushDateOk();
           /* Copy keeps its original gate (agreement + rush date).
              GO TO CHECKOUT additionally needs a valid customer email
              from step 5. */
-          var copyOk = !!state.agreed && rushOk;
+          var copyOk = agreementComplete() && rushOk;
           var emailOk = customerEmailValid();
           var infoOk = customerInfoComplete();
           /* No color-count gate: Screen printing allows
@@ -4019,14 +4235,23 @@
               custInfoStatusEl.className = "info-status wait";
             }
           }
-          if (state.agreed && !rushOk) {
+          if (agreementComplete() && !rushOk) {
             agreeStatus.textContent = rushDateTooSoon()
               ? "✓ Confirmed — but your rush date must be at least a week out (7 days from today or later) before you can copy or send your quote. Pick a date at least a week out in the rush box above your price."
               : "✓ Confirmed — but a rush date is required for your rush order before you can copy or send your quote. Pick your rush date in the rush box above your price.";
             agreeStatus.className = "agree-status wait";
+          } else if (agreementComplete()) {
+            agreeStatus.textContent = "✓ Confirmed — thank you. You can now send your quote below.";
+            agreeStatus.className = "agree-status ok";
+          } else if (state.agreed && !state.termsAgreed) {
+            agreeStatus.textContent = "Please also tick “I agree to the Terms and Conditions” before sending your quote.";
+            agreeStatus.className = "agree-status wait";
+          } else if (!state.agreed && state.termsAgreed) {
+            agreeStatus.textContent = "Please also tick the first box above — that your sizing, color, and what you’re purchasing are correct — before sending your quote.";
+            agreeStatus.className = "agree-status wait";
           } else {
-            agreeStatus.textContent = state.agreed ? "✓ Confirmed — thank you. You can now send your quote below." : "Please tick the box above before sending your quote.";
-            agreeStatus.className = "agree-status " + (state.agreed ? "ok" : "wait");
+            agreeStatus.textContent = "Please tick both boxes above to confirm before sending your quote.";
+            agreeStatus.className = "agree-status wait";
           }
           var emailBtnEl = document.getElementById("emailSummaryBtn");
           if (emailBtnEl) {
@@ -4077,7 +4302,7 @@
              customer's own choice or entry — the value goes green
              and the label keeps the summary's normal color. */
           var fullValueLabels = [
-            "Customer name", "Company name", "Customer email", "Customer phone",
+            "Customer name", "Company name", "Project name", "Customer email", "Customer phone",
             "Shipping address", "Shipping method", "Garment source",
             "Color", "Preview view", "Print method",
             "Uploaded logo file", "Customer comment about the logo",
@@ -4236,7 +4461,7 @@
             if (names.length) {
               attachText.textContent = "Your uploaded logo file is " + names.join("; ") + (state.originalName ? ", and your original file is " + state.originalName : "") + ". When you tap GO TO CHECKOUT below, that file is sent to One Graphics automatically with your quote — no email window opens and there is nothing to attach by hand.";
             } else {
-              attachText.textContent = "Upload your logo in step 2 first. When you tap GO TO CHECKOUT below, your logo file is sent to One Graphics automatically with your quote — no email window opens and there is nothing to attach by hand.";
+              attachText.textContent = "Upload your logo with the Upload button on the shirt first. When you tap GO TO CHECKOUT below, your logo file is sent to One Graphics automatically with your quote — no email window opens and there is nothing to attach by hand.";
             }
           }
         }
@@ -4328,11 +4553,20 @@
               });
             }
             /* Locations the new product doesn't offer come off the
-               order: their step 2 rows go away and any artwork
-               placed on them is removed — they cannot be printed
-               on this product. */
+               order: their logo pills go away and any artwork
+               placed on them is remembered (see deselectLoc) — it
+               can't be printed or priced on this product, but it
+               is NOT deleted: switch back to an item that offers
+               the location and the logo returns with its placement
+               and size as they were. */
             ["front", "back", "pocket"].forEach(function (p) {
               if (!locEnabled(p)) deselectLoc(p);
+            });
+            /* Locations this product offers again get their
+               remembered artwork back, just as the customer left
+               it. */
+            ["front", "back", "pocket"].forEach(function (p) {
+              if (locEnabled(p)) restoreLoc(p);
             });
             if ((!currentProduct().hasBack && state.placement === "back") ||
                 (state.product === "apron" && state.placement === "pocket") ||
@@ -4352,7 +4586,7 @@
               state.placement = landLoc;
             }
             /* The location being viewed must be one this product
-               offers, so its upload row is there in step 2 — every
+               offers, so its upload row is there in the logo block — every
                offered location's row always shows. */
             if (!locEnabled(state.placement)) {
               state.placement = ["front", "back", "pocket"].filter(function (x) { return locEnabled(x); })[0] || "front";
@@ -4361,7 +4595,7 @@
             render();
           });
         });
-        /* Hat style (step 1): Mesh Trucker or Closed Trucker — swaps
+        /* Hat style (step 2): Mesh Trucker or Closed Trucker — swaps
            the hat photo, keeping color and artwork. */
         document.querySelectorAll("[data-hatstyle]").forEach(function (btn) {
           btn.addEventListener("click", function () {
@@ -4369,23 +4603,15 @@
             render();
           });
         });
-        /* Location rows (step 2) ARE the locations now — there are
-           no Front / Back / Pocket tab buttons. Tapping a row (not
-           its Upload or × button) selects that location: the
-           preview above shows that location's print area and
-           artwork, and the Logo tools (step 2, under Remove) work on it. */
-        document.querySelectorAll("[data-loc-row]").forEach(function (row) {
-          row.addEventListener("click", function (e) {
-            if (!e.target || !e.target.closest) return;
-            if (e.target.closest("[data-loc-upload]") || e.target.closest("[data-loc-remove]")) return;
-            var p = row.getAttribute("data-loc-row");
-            if (!locEnabled(p) || state.placement === p) return;
-            state.placement = p;
-            uploadError.classList.remove("show");
-            render();
-          });
-        });
-        /* Per-location × buttons (step 2): cancel/remove THAT
+        /* Location pills (in the Your logo block) ARE the locations
+           now: one pill per location in a single row, styled like
+           the print-method buttons. Tapping a pill ONLY selects
+           that location — the preview above shows its print area
+           and artwork, and the Logo tools (step 1, under Remove)
+           work on it. A pill NEVER opens the file picker: the only
+           control that does is the Upload / Replace button in the
+           detail line under the pill row (wired just below). */
+        /* Per-location × buttons (logo block): cancel/remove THAT
            location's uploaded logo only — it comes off the preview,
            the price, the Final summary, and the sent quote, and the
            row goes back to "No logo uploaded". Other locations keep
@@ -4396,24 +4622,43 @@
             var dd = state.designs[p];
             if (dd && dd.blob) URL.revokeObjectURL(dd.src);
             state.designs[p] = null;
+            /* An explicit remove forgets the location completely —
+               no remembered copy comes back later either. */
+            var sv = state.savedDesigns[p];
+            if (sv && sv.blob) URL.revokeObjectURL(sv.src);
+            state.savedDesigns[p] = null;
             render();
           });
         });
-        /* Per-location Upload buttons (step 2): each location row
-           has its OWN upload button. Tapping it selects that
-           location first, then opens the same file picker — so the
-           logo the customer picks lands on that location and stays
-           there, listed in that location's row. */
-        document.querySelectorAll("[data-loc-upload]").forEach(function (btn) {
+        /* Per-location pills (logo block): tapping a pill ONLY
+           selects that location and shows it on the shirt — it
+           must NOT open the file picker, so a customer can switch
+           between Front / Back / Pocket freely to view each side.
+           Selecting never touches any location's uploaded logo. */
+        document.querySelectorAll("[data-loc-select]").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            var p = btn.getAttribute("data-loc-upload");
+            var p = btn.getAttribute("data-loc-select");
             if (!locEnabled(p)) return;
             state.placement = p;
-            uploadError.classList.remove("show");
             render();
-            document.getElementById("artUpload").click();
           });
         });
+        /* Upload button (ON the shirt view): the ONLY control that
+           opens the file picker. It uploads to the SELECTED
+           location — the change handler on #artUpload files the
+           picked logo under state.placement — so the logo lands on
+           the location the customer is viewing and stays there,
+           named on its pill and in the detail line. Once a logo is
+           on the selected location the button hides (render keeps
+           it in step) until the logo is removed with a ×. */
+        var stageUploadBtn = document.getElementById("stageUploadBtn");
+        if (stageUploadBtn) {
+          stageUploadBtn.addEventListener("click", function () {
+            if (!locEnabled(state.placement)) return;
+            uploadError.classList.remove("show");
+            document.getElementById("artUpload").click();
+          });
+        }
         function selectShirtColor(key) {
           state.color = key;
           document.querySelectorAll("[data-color]").forEach(function (b) {
@@ -4434,7 +4679,7 @@
             render();
           });
         });
-        /* Print method (step 2): switching method reprices from the
+        /* Print method (step 1): switching method reprices from the
            method's fees (Shop settings H) and re-checks the minimum. */
         document.querySelectorAll("[data-method]").forEach(function (btn) {
           btn.addEventListener("click", function () {
@@ -4462,23 +4707,7 @@
           rushDateCtl.addEventListener("change", onRushDate);
         }
 
-        sizeSlider.addEventListener("input", function () {
-          var d = currentDesign(); if (!d) return;
-          d.w = parseFloat(sizeSlider.value);
-          clampDesign(d); render();
-          artworkEl.classList.add("resizing");
-        });
-        sizeSlider.addEventListener("change", function () { artworkEl.classList.remove("resizing"); });
-        sizeSlider.addEventListener("pointerup", function () { artworkEl.classList.remove("resizing"); });
-        whiteToggle.addEventListener("click", function () {
-          var d = currentDesign(); if (!d) return;
-          d.white = !d.white; render();
-        });
-        /* ---------- Logo tools: comment, color, background ---------- */
-        artCommentEl.addEventListener("input", function () {
-          state.artComment = artCommentEl.value;
-          renderSummary();
-        });
+        /* ---------- Logo tools: color, background ---------- */
         function wireLogoChip(btn) {
           btn.addEventListener("click", function () {
             setLogoColor(btn.getAttribute("data-logo-color") || null);
@@ -4488,19 +4717,11 @@
         logoColorInput.addEventListener("change", function () {
           setLogoColor(logoColorInput.value);
         });
-        bgTolSlider.addEventListener("input", function () {
-          var d = currentDesign(); if (!d) return;
-          d.bgTol = parseInt(bgTolSlider.value, 10) || 60;
-        });
         removeBgBtn.addEventListener("click", function () {
           applyRemoveBg(currentDesign());
         });
         restoreBgBtn.addEventListener("click", function () {
           restoreBg(currentDesign());
-        });
-        document.getElementById("centerBtn").addEventListener("click", function () {
-          var d = currentDesign(); if (!d) return;
-          centerDesign(d, state.placement, state.printSize); clampDesign(d); render();
         });
         if (ownCheck) {
           ownCheck.addEventListener("change", function () {
@@ -4531,7 +4752,7 @@
            GO TO CHECKOUT gate. The step 5 email is the customer's only
            email field — it is the email the send uses. */
         [
-          [custNameEl, "custName"], [custCompanyEl, "custCompany"],
+          [custNameEl, "custName"], [custCompanyEl, "custCompany"], [custProjectEl, "custProject"],
           [custPhoneEl, "custPhone"], [custStreetEl, "custStreet"],
           [custCityEl, "custCity"], [custStateEl, "custState"], [custZipEl, "custZip"]
         ].forEach(function (pair) {
@@ -4847,12 +5068,22 @@
             renderAgreement(); renderSummary();
           });
         }
-        document.getElementById("removeArtBtn").addEventListener("click", function () {
-          var d = currentDesign();
-          if (d && d.blob) URL.revokeObjectURL(d.src);
-          state.designs[state.placement] = null;
-          render();
-        });
+        var termsCheckEl = document.getElementById("termsCheck");
+        if (termsCheckEl) {
+          termsCheckEl.addEventListener("change", function () {
+            state.termsAgreed = !!termsCheckEl.checked;
+            renderAgreement(); renderSummary();
+          });
+        }
+        var termsToggleEl = document.getElementById("termsToggle");
+        var termsPanelEl = document.getElementById("termsPanel");
+        if (termsToggleEl && termsPanelEl) {
+          termsToggleEl.addEventListener("click", function () {
+            var open = termsPanelEl.hidden;
+            termsPanelEl.hidden = !open;
+            termsToggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+          });
+        }
         /* ---------- Uploads ---------- */
         /* The size limit comes from Shop settings (section N). */
         document.getElementById("artUpload").addEventListener("change", function (ev) {
@@ -4877,7 +5108,8 @@
             var isSvg = /\.svg$/.test(lower);
             var aspect = probe.naturalWidth && probe.naturalHeight ? probe.naturalWidth / probe.naturalHeight : 1.6;
             /* Target: the upload goes to the current location only
-               — the location whose row's Upload button was tapped. */
+               — the selected location, whose detail line's Upload /
+               Replace button opened the picker. */
             var targets = [state.placement];
             var originPlacement = state.placement;
             targets.forEach(function (p, idx) {
@@ -5218,7 +5450,7 @@
           emailSummaryBtnEl.addEventListener("click", function (e) {
             e.preventDefault();
             if (quoteSending || checkoutInFlight) return;
-            if (!state.agreed || !rushDateOk() || !customerEmailValid() || !customerInfoComplete()) {
+            if (!agreementComplete() || !rushDateOk() || !customerEmailValid() || !customerInfoComplete()) {
               if (emailMsgEl && !rushDateOk()) {
                 emailMsgEl.textContent = rushDateTooSoon()
                   ? "Your rush date must be at least a week out — 7 days from today or later. Pick a date at least a week out in the rush box above your price before sending your design."
@@ -5697,11 +5929,11 @@
               productClickPrev = null;
             }
           }
-          if (t.closest("[data-loc-row]")) stepChosen.placement = true;
+          if (t.closest("[data-loc-select]")) stepChosen.placement = true;
           if (t.closest("#printSizeSeg [data-printsize]")) stepChosen.printSize = true;
-          if (t.closest("#whiteToggle") || t.closest("#removeBgBtn") || t.closest("#restoreBgBtn") ||
-              t.closest("#centerBtn") || t.closest("[data-logo-color]")) stepChosen.logoTools = true;
-          if (t.closest("#removeArtBtn") || t.closest("[data-loc-remove]")) stepChosen.logoTools = false;
+          if (t.closest("#removeBgBtn") || t.closest("#restoreBgBtn") ||
+              t.closest("[data-logo-color]")) stepChosen.logoTools = true;
+          if (t.closest("[data-loc-remove]")) stepChosen.logoTools = false;
         }, false);
         document.addEventListener("click", function (e) {
           var t = e.target;
@@ -5709,9 +5941,6 @@
             productClickPrev = { color: state.color, placement: state.placement };
           }
         }, true);
-        document.addEventListener("input", function (e) {
-          if (e.target && e.target.id === "sizeSlider") stepChosen.logoTools = true;
-        }, false);
         document.addEventListener("change", function (e) {
           /* A fresh upload has not been through the logo tools yet,
              and the custom logo color is a logo tool too. */
@@ -5726,8 +5955,10 @@
            Steps 1–7 fold open and closed: tapping a heading pops
            it open, tapping again minimizes it. Step 8 (Go to checkout)
            is exempt — it never collapses, so GO TO CHECKOUT is always
-           visible. Only
-           step 1 starts open, so the page opens short and tidy
+           visible. Steps
+           1 and 2 start open (step 2 sits inside step 1, under the
+           method buttons, and its product picker must be visible),
+           so the page opens short and tidy
            instead of one long scroll. Tapping a step number in the
            tracker opens that step (and still jumps to it), and when
            a step becomes complete the NEXT step pops open on its
@@ -5747,12 +5978,26 @@
              matter who asks to close it, so GO TO CHECKOUT stays visible. */
           if (sec.getAttribute("data-step-sec") === "8") open = true;
           sec.classList.toggle("open", !!open);
-          var body = sec.querySelector(".sec-body");
+          /* Own body and own toggle only (:scope > …): step 2 is
+             nested inside step 1's section, so a plain descendant
+             query on step 1 could reach step 2's wrapper instead of
+             step 1's own. */
+          var body = sec.querySelector(":scope > .sec-body");
           if (body) body.hidden = !open;
-          var btn = sec.querySelector(".sec-toggle");
+          var btn = sec.querySelector(":scope > h2 .sec-toggle");
           if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
         }
-        function openSection(sec) { setSectionOpen(sec, true); }
+        function openSection(sec) {
+          if (!sec) return;
+          /* Step 2 sits inside step 1's section (between the method
+             buttons and the Your logo tools), so opening step 2 also
+             opens the step 1 section that contains it — otherwise a
+             tracker tap on step 2 while step 1 is folded would open
+             a step that stays hidden inside the folded step 1. */
+          var host = sec.parentElement ? sec.parentElement.closest("[data-step-sec]") : null;
+          if (host && host !== sec) setSectionOpen(host, true);
+          setSectionOpen(sec, true);
+        }
         document.querySelectorAll("[data-step-sec]").forEach(function (sec) {
           var h2 = sec.querySelector("h2");
           if (!h2) return;
@@ -5789,23 +6034,28 @@
           btn.addEventListener("click", function () {
             setSectionOpen(sec, !sec.classList.contains("open"));
           });
-          setSectionOpen(sec, sec.getAttribute("data-step-sec") === "1");
+          /* Steps 1 and 2 start open: step 2 (Product) sits inside
+             step 1 directly under the method buttons, and its product
+             picker is a first-run choice — starting it folded hid the
+             T-shirt / Polo / Long sleeve / Hoodie / Apron / Hat
+             buttons behind a heading that looked open but showed
+             nothing. It still folds shut on a heading tap, like the
+             other steps. */
+          var stepNum = sec.getAttribute("data-step-sec");
+          setSectionOpen(sec, stepNum === "1" || stepNum === "2");
         });
-        /* Colors flanking the preview: on wide screens the two
-           color panels sit in the stage row — the garment colors
+        /* Colors flanking the preview: the two color panels sit
+           in the stage row at EVERY width — the garment colors
            (#garmentColors) on the LEFT of the garment image and
            the logo colors (#logoColorBlock) on the RIGHT; on
-           narrow screens (max-width 920px) both panels move to
-           normal flow directly under the sticky preview unit, in
-           that same order (garment first, then logo), so the unit
-           stays short on a phone. The caption paragraph and the
-           step tracker move out with them on narrow screens (see
+           narrow screens (max-width 920px) the CSS simply slims
+           the panels to narrow columns so the shirt stays big on
+           a phone. Only the caption paragraph and the step tracker
+           move out of the pinned unit on narrow screens (see
            placeSideColors) — inside the unit they filled the whole
            phone screen and the steps below were not visible.
            Moving the nodes keeps every control working exactly as
-           before — same ids, same buttons — and the CSS stacks
-           them under the stage in the same order even if this move
-           ever fails to run. */
+           before — same ids, same buttons. */
         var garmentColorsEl = document.getElementById("garmentColors");
         var logoColorsEl = document.getElementById("logoColorBlock");
         var stageRowEl = document.getElementById("stageRow");
@@ -5817,18 +6067,21 @@
           var stageColNode = document.getElementById("stageCol");
           if (!stageColNode) return;
           if (window.matchMedia("(max-width: 920px)").matches) {
-            /* Phones: the caption paragraph and the step tracker
-               also leave the pinned unit and sit in normal flow
-               directly under it (caption first, then the tracker,
-               then the two color panels) — inside the unit the
-               long caption wraps to many lines and, with the
-               tracker, filled the whole phone screen, leaving the
-               steps below invisible. The pinned phone unit is just
-               the shirt + print size, so a clear band of steps
-               always shows under it. Order and wording are
-               unchanged; the nodes simply move. */
+            /* Phones: the two color panels STAY in the stage row,
+               flanking the shirt exactly like on desktop (garment
+               left, logo right) — the CSS slims them to narrow
+               columns at this width. Only the caption paragraph
+               and the step tracker leave the pinned unit and sit
+               in normal flow directly under it (caption first,
+               then the tracker) — inside the unit the long caption
+               wraps to many lines and, with the tracker, filled
+               the whole phone screen, leaving the steps below
+               invisible. Order and wording are unchanged; the
+               nodes simply move. */
+            if (garmentColorsEl.parentNode !== stageRowEl || garmentColorsEl.nextSibling !== stageColNode) stageRowEl.insertBefore(garmentColorsEl, stageColNode);
+            if (logoColorsEl.parentNode !== stageRowEl) stageRowEl.appendChild(logoColorsEl);
             var anchor = stageUnitEl;
-            [stageCaptionEl, progressEl, garmentColorsEl, logoColorsEl].forEach(function (el) {
+            [stageCaptionEl, progressEl].forEach(function (el) {
               if (!el) return;
               if (el.parentNode !== anchor.parentNode || el.previousElementSibling !== anchor) anchor.parentNode.insertBefore(el, anchor.nextSibling);
               anchor = el;
@@ -5854,10 +6107,10 @@
            scroll-margin-top, so each step — including the bottom
            steps 5–8 — lands fully visible right under the preview
            instead of hidden behind it or below the fold. Measured
-           again whenever the unit can change height: the color
-           panels moving in/out at the 920px breakpoint, window
-           resizes, webfont loading, and any internal relayout
-           (ResizeObserver). */
+           again whenever the unit can change height: the caption
+           and tracker moving in/out at the 920px breakpoint,
+           window resizes, webfont loading, and any internal
+           relayout (ResizeObserver). */
         function syncStickyOffset() {
           if (!stageUnitEl) return;
           var h = stageUnitEl.offsetHeight;
@@ -5897,20 +6150,21 @@
           var ownOk = !!state.ownGarment
             && !!(state.ownGarmentDetails || "").trim()
             && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(ownEmail);
-          /* Step 2 is Print method together with the print
-             locations and the per-location logo uploads: it checks
-             on the method choice alone — uploads never block
-             moving on. The Final summary (step 6) checks only when
+          /* Step 1 is Print method: it checks on the method
+             choice alone — the per-location logo uploads live in
+             the preview, on the shirt view, and uploads
+             never block moving on. Step 2 is the Item. The Final
+             summary (step 6) checks only when
              artwork is placed, the quantities meet the minimum, and
              the customer information is complete. */
           var doneMap = {
-            "1": stepChosen.product,
-            "2": stepChosen.method,
+            "1": stepChosen.method,
+            "2": stepChosen.product,
             "3": qtyOk,
             "4": ownOk,
             "5": infoOk,
             "6": placed && qtyOk && infoOk,
-            "7": !!state.agreed && rushDateOk(),
+            "7": agreementComplete() && rushDateOk(),
             "8": false
           };
           document.querySelectorAll("[data-pstep]").forEach(function (chip) {
