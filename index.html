@@ -435,7 +435,20 @@
         .side-panel:not(.colors-open) .tool-title,
         .side-panel:not(.colors-open) .swatches,
         .side-panel:not(.colors-open) .logo-colors,
-        .side-panel:not(.colors-open) .custom-color-row { display: none; }
+        .side-panel:not(.colors-open) .custom-color-row,
+        .side-panel:not(.colors-open) .per-color-block { display: none; }
+        /* Per-color rows in the slim phone panel: stack the dot,
+           name, picker and Reset in one narrow centered cell,
+           like the color chips above them. */
+        .side-panel .per-color-block { margin-top: 10px; padding-top: 9px; }
+        .side-panel .per-color-hint { font-size: 9.5px; text-align: center; line-height: 1.35; }
+        .side-panel .per-color-row { flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; text-align: center; }
+        .side-panel .per-color-row .pc-label { flex: none; }
+        .side-panel .per-color-row .pc-name { font-size: 9.5px; }
+        .side-panel .per-color-row .pc-hex { font-size: 8.5px; }
+        .side-panel .per-color-row .pcdot { width: 18px; height: 18px; }
+        .side-panel .per-color-row input[type="color"] { width: 36px; height: 30px; }
+        .side-panel .per-color-row .pc-reset { font-size: 9.5px; padding: 4px 7px; min-height: 28px; }
         .side-panel.colors-open .color-toggle { margin-bottom: 7px; }
         /* The middle column is narrower on a phone now that the
            panels flank it, so the controls inside it compact a
@@ -995,6 +1008,39 @@
         background: var(--surface); cursor: pointer;
       }
       .custom-color-row .hex-now { font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+      /* Per-color recoloring (owner, 2026-11-17): under the
+         one-color picks, the placed logo's own detected colors
+         each get their own row — original color dot + name, a
+         color picker for the new color, and a Reset once that
+         color has been changed. Changing one row repaints ONLY
+         that color's pixels in the logo; every other color is
+         left exactly as it was. */
+      .per-color-block { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
+      .per-color-hint { font-size: 13px; color: var(--muted); margin: 0 0 8px; line-height: 1.45; }
+      .per-color-row {
+        display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+        padding: 6px 0; border-bottom: 1px solid var(--surface-2);
+      }
+      .per-color-row:last-child { border-bottom: 0; }
+      .per-color-row .pcdot {
+        width: 22px; height: 22px; border-radius: 50%; flex: none;
+        border: 1px solid rgba(0,0,0,0.3); display: inline-block;
+      }
+      .per-color-row .pc-name { font-size: 13px; font-weight: 700; line-height: 1.25; }
+      .per-color-row .pc-hex { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; display: block; font-weight: 600; }
+      .per-color-row .pc-label { flex: 1 1 64px; min-width: 0; }
+      .per-color-row input[type="color"] {
+        width: 44px; height: 34px; padding: 2px; flex: none;
+        border: 1.5px solid var(--line); border-radius: 8px;
+        background: var(--surface); cursor: pointer;
+      }
+      .per-color-row .pc-reset {
+        appearance: none; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+        font: inherit; font-size: 12px; font-weight: 700; border-radius: 999px;
+        padding: 5px 9px; min-height: 32px; cursor: pointer; flex: none;
+      }
+      .per-color-row .pc-reset:hover, .per-color-row .pc-reset:focus-visible { border-color: var(--accent); color: var(--accent); }
+      .per-color-row.changed .pc-name { color: var(--accent); }
       .tool-status { font-size: 13.5px; font-weight: 600; color: var(--muted); margin: 8px 0 0; }
       .tool-status.working { color: var(--accent); }
       /* Customer agreement — the Confirm step's card uses the same
@@ -1700,6 +1746,17 @@
               <div class="custom-color-row">
                 <label for="logoColorInput">Custom color <input type="color" id="logoColorInput" value="#8a6c4a" /></label>
                 <span class="hex-now" id="logoColorHex">Current: original colors</span>
+              </div>
+              <!-- Per-color recoloring: the placed logo's own
+                   detected colors, each changeable on its own.
+                   The rows are built by the script from the
+                   current location's logo (see renderPerColorPanel)
+                   — changing one color repaints only that color
+                   in the logo and leaves the rest untouched. -->
+              <div class="per-color-block" id="perColorBlock">
+                <h4 class="tool-title">Change one color</h4>
+                <p class="per-color-hint" id="perColorHint">Upload a logo and each of its colors will show here — change any one on its own.</p>
+                <div id="perColorList"></div>
               </div>
           </div><!-- /.side-panel-logo -->
           </div><!-- /.stage-row -->
@@ -2881,7 +2938,34 @@
            Both run in the browser on a canvas copy of the artwork.
            displaySrc() is what the stage and the saved PNG actually use:
            recolored version first, then background-removed, then original. */
-        function displaySrc(d) { return d.colorSrc || d.invSrc || d.bgSrc || d.src; }
+        function displaySrc(d) { return d.colorSrc || d.perColorSrc || d.invSrc || d.bgSrc || d.src; }
+        function rgbToHex(r, g, b) {
+          function h(v) { var s = Math.max(0, Math.min(255, Math.round(v))).toString(16); return s.length < 2 ? "0" + s : s; }
+          return "#" + h(r) + h(g) + h(b);
+        }
+        /* Friendly name for a detected logo color, for the
+           per-color rows: the nearest of a small set of everyday
+           color names, so the Escuela logo's colors read as
+           White / Red / Yellow / Blue instead of bare hex codes.
+           The hex is always shown alongside, so a near miss in
+           the name never hides the real color. */
+        var COLOR_NAMES = [
+          ["White", 255, 255, 255], ["Black", 17, 17, 17], ["Grey", 130, 130, 130],
+          ["Red", 200, 30, 35], ["Dark red", 128, 20, 25], ["Orange", 240, 130, 30],
+          ["Yellow", 250, 205, 0], ["Gold", 190, 150, 60], ["Green", 40, 150, 60],
+          ["Dark green", 20, 90, 45], ["Blue", 30, 90, 200], ["Navy", 25, 40, 85],
+          ["Light blue", 110, 180, 235], ["Purple", 120, 60, 170], ["Pink", 240, 140, 180],
+          ["Brown", 120, 75, 40], ["Tan", 195, 165, 120]
+        ];
+        function colorNameFor(r, g, b) {
+          var best = "", bestD = Infinity;
+          COLOR_NAMES.forEach(function (c) {
+            var dr = r - c[1], dg = g - c[2], db = b - c[3];
+            var dd = dr * dr + dg * dg + db * db;
+            if (dd < bestD) { bestD = dd; best = c[0]; }
+          });
+          return best;
+        }
         var lastArtSrc = null;
         function hexToRgb(hex) {
           var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
@@ -2954,6 +3038,11 @@
             ctx.drawImage(img, 0, 0, cw, ch);
             var px = ctx.getImageData(0, 0, cw, ch).data;
             var counts = {}, total = 0, i, key;
+            /* Per-bucket channel sums, so each counted color also
+               gets a representative average RGB — the palette the
+               per-color recoloring panel and repaint are built
+               from (see the palette in the return value below). */
+            var sumR = {}, sumG = {}, sumB = {};
             var edgeCounts = {}, edgeTotal = 0;
             /* Per-pixel bucket grid, kept for the interior test
                below (-1 marks a transparent / ignored pixel). */
@@ -2977,6 +3066,9 @@
               key = ((pr >> 5) << 6) | ((pg >> 5) << 3) | (pb >> 5);
               grid[pi] = key;
               counts[key] = (counts[key] || 0) + 1;
+              sumR[key] = (sumR[key] || 0) + pr;
+              sumG[key] = (sumG[key] || 0) + pg;
+              sumB[key] = (sumB[key] || 0) + pb;
               total++;
               var ex = pi % cw, ey = (pi / cw) | 0;
               if (ex === 0 || ey === 0 || ex === cw - 1 || ey === ch - 1) {
@@ -2984,7 +3076,7 @@
                 edgeTotal++;
               }
             }
-            if (!total) return { count: 0, multi: false, total: 0, hasBlack: false, hasWhite: false, mono: false };
+            if (!total) return { count: 0, multi: false, total: 0, hasBlack: false, hasWhite: false, mono: false, palette: [] };
             /* White-background rule: the quantized white bucket
                (every channel in the top bucket, >= 224) is the
                image background — and is not counted — when white
@@ -3025,6 +3117,15 @@
                light one, and only a monochrome logo may be offered
                the black↔white inversion. */
             var hasBlack = false, hasWhite = false, mono = true;
+            /* The logo's distinct colors themselves — every bucket
+               that passes the same tests the count uses (real
+               share, filled interior, not the image background),
+               with its representative average color. The per-color
+               recoloring feature is built on this list: the panel
+               shows one row per entry and the repaint matches
+               pixels against these representatives. Sorted by
+               coverage, biggest color first. */
+            var palette = [];
             for (key in counts) {
               if (bgKey !== null && Number(key) === bgKey) continue;
               if (counts[key] < minCount) continue;
@@ -3032,6 +3133,9 @@
                  even when they cover more than the 1% share. */
               if ((interior[key] || 0) < Math.max(3, Math.floor(counts[key] * 0.02))) continue;
               distinct++;
+              var pCnt = counts[key];
+              var pR = Math.round(sumR[key] / pCnt), pG = Math.round(sumG[key] / pCnt), pB = Math.round(sumB[key] / pCnt);
+              palette.push({ key: Number(key), r: pR, g: pG, b: pB, hex: rgbToHex(pR, pG, pB), count: pCnt });
               var kN = Number(key);
               var rB = (kN >> 6) & 7, gB = (kN >> 3) & 7, bB = kN & 7;
               var bMax = Math.max(rB, gB, bB), bMin = Math.min(rB, gB, bB);
@@ -3041,7 +3145,8 @@
                 if (bMin >= 6) hasWhite = true;
               }
             }
-            return { count: distinct, multi: distinct > 1, total: total, hasBlack: hasBlack, hasWhite: hasWhite, mono: distinct > 0 && mono };
+            palette.sort(function (a, b) { return b.count - a.count; });
+            return { count: distinct, multi: distinct > 1, total: total, hasBlack: hasBlack, hasWhite: hasWhite, mono: distinct > 0 && mono, palette: palette };
           } catch (err) {
             return null;
           }
@@ -3057,8 +3162,8 @@
             if (d.colorSeq !== seq) return null;
             var res = countDistinctColorsInImage(img);
             d.colorAnalyzedSrc = srcToAnalyze;
-            if (res) { d.multiColor = !!res.multi; d.colorCount = res.count; d.hasBlack = !!res.hasBlack; d.hasWhite = !!res.hasWhite; d.monoLogo = !!res.mono; }
-            else { d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false; }
+            if (res) { d.multiColor = !!res.multi; d.colorCount = res.count; d.hasBlack = !!res.hasBlack; d.hasWhite = !!res.hasWhite; d.monoLogo = !!res.mono; d.palette = res.palette || []; }
+            else { d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false; d.palette = []; }
             render();
             /* A freshly counted logo may carry the Screen
                extra-color charge for the first time — prompt
@@ -3071,21 +3176,85 @@
           }).catch(function () {
             if (d.colorSeq !== seq) return null;
             d.colorAnalyzedSrc = srcToAnalyze;
-            d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false;
+            d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false; d.palette = [];
             render();
             return null;
           });
+        }
+        /* ---------- Per-color recoloring (owner, 2026-11-17) ----------
+           The customer can change EACH of the logo's own colors on
+           its own: the Logo color panel lists every distinct color
+           the detection above found in the placed logo (d.palette)
+           with its own picker, and changing one repaints only that
+           color's pixels — the Escuela Taqueria logo's yellow
+           "Taqueria" fill can go black while its blue outline
+           stays blue, instead of both merging into one blob the
+           way the single-color recolor painted them. White that
+           is part of the design (the Escuela circle) is a palette
+           color like any other and can be changed too; white that
+           is only the image background never enters the palette
+           (the detection's edge rule excludes it).
+           d.perColorMap maps a palette entry's bucket key to the
+           replacement hex the customer picked for it; only changed
+           colors are in the map. The repainted copy lands in
+           d.perColorSrc and displaySrc() prefers it, so the shirt
+           preview, the enlarged view and the emailed design
+           preview all show the same result. Per-color changes and
+           the one-color picks exclude each other — making one
+           clears the other (and any inversion), so the latest
+           coloring choice is always the one that shows — and
+           "Original colors" clears everything. */
+        function hasPerColorChanges(d) {
+          return !!(d && d.perColorMap && Object.keys(d.perColorMap).length);
+        }
+        /* The distinct colors the logo has AFTER its per-color
+           changes: each palette color is replaced by its picked
+           color (if any) and the results are counted by the same
+           coarse bucket the detection uses — so changing two
+           colors to the SAME new color merges them into one,
+           exactly as they will print. */
+        function finalColorCount(d) {
+          if (!d || !d.palette || !d.palette.length) return d ? (d.colorCount || 0) : 0;
+          var seen = {}, n = 0;
+          d.palette.forEach(function (e) {
+            var t = d.perColorMap && d.perColorMap[e.key] ? hexToRgb(d.perColorMap[e.key]) : null;
+            var k = t ? (((t.r >> 5) << 6) | ((t.g >> 5) << 3) | (t.b >> 5)) : e.key;
+            if (!seen[k]) { seen[k] = 1; n++; }
+          });
+          return n;
         }
         /* The color count a placed logo is charged on. A design
            whose Logo color is set (colorHex) counts as 1:
            applyRecolor() has turned (or is turning) the rendered
            artwork's ink into that one color (design white stays
            white), so it is priced as a one-color print and no
-           extra-color charge applies to it. */
+           extra-color charge applies to it. A design with
+           per-color changes counts its FINAL colors (above), so
+           the Screen extra-color charge follows the colors the
+           logo will actually print in. */
         function logoColorCount(d) {
           if (!d || !d.src) return 0;
           if (d.colorHex) return 1;
+          if (hasPerColorChanges(d)) return finalColorCount(d);
           return d.colorCount || 0;
+        }
+        /* Summary wording for a design's per-color changes:
+           "logo colors changed: Yellow #FFCC00 → Black #000000",
+           naming each changed color by its detected name + hex
+           and its replacement — recorded on the design's line in
+           the order summary (see designSummaryLine), so the
+           emailed quote tells the shop exactly what to print. */
+        function perColorSummaryText(d) {
+          if (!hasPerColorChanges(d) || !d.palette || !d.palette.length) return "";
+          var parts = [];
+          d.palette.forEach(function (e) {
+            var t = d.perColorMap[e.key];
+            if (!t) return;
+            var trgb = hexToRgb(t);
+            var tName = trgb ? colorNameFor(trgb.r, trgb.g, trgb.b) : "";
+            parts.push(colorNameFor(e.r, e.g, e.b) + " " + e.hex.toUpperCase() + " → " + (tName ? tName + " " : "") + t.toUpperCase());
+          });
+          return parts.length ? "individual logo colors changed: " + parts.join(", ") : "";
         }
         /* Screen printing per-color charge: the first 2 colors
            of each logo are included in the base print price;
@@ -3238,6 +3407,135 @@
             "<p>Pick a different color in the Logo color panel if you want the whole design to stand out — or keep white if that’s the look you want.</p>"
           );
         }
+        /* The per-color repaint: like applyRecolor, it renders
+           from the background-removed artwork when there is one
+           (bgSrc || src) — and setPerColor below makes sure the
+           background is OFF first, same as the other transforms.
+           The logo's colors are detected fresh from that artwork
+           (the same countDistinctColorsInImage palette), every
+           visible pixel is matched to its NEAREST palette color,
+           and only pixels belonging to a CHANGED color move: they
+           are shifted by the difference between the picked color
+           and the color they belong to, so a flat area lands
+           exactly on the picked color while shading and
+           anti-aliased edges keep their offsets instead of
+           turning into a hard fringe. Pixels of unchanged colors
+           are never touched — changing the yellow fill leaves the
+           blue outline, the red shadow and the white circle
+           pixel-for-pixel alone. */
+        function applyPerColor(d) {
+          if (!d || !hasPerColorChanges(d)) { if (d) d.perColorSrc = null; return; }
+          var seq = ++d.procSeq;
+          d.toolNote = "Changing that color in your logo…";
+          render();
+          loadForProcess(d.bgSrc || d.src).then(function (img) {
+            if (seq !== d.procSeq) return;
+            var p = processCanvas(img);
+            if (!p) { d.toolNote = "That file couldn’t be recolored here — the original is unchanged."; render(); return; }
+            var det = countDistinctColorsInImage(img);
+            var pal = (det && det.palette && det.palette.length) ? det.palette : (d.palette || []);
+            var changes = [];
+            pal.forEach(function (e) {
+              var t = d.perColorMap[e.key];
+              if (!t) return;
+              var rgb = hexToRgb(t);
+              if (rgb) changes.push({ rep: e, to: rgb });
+            });
+            if (!changes.length) { d.perColorSrc = null; render(); return; }
+            /* Nearest-palette-entry per pixel color, cached by
+               the pixel's coarse bucket (5 bits per channel, so
+               the cache can never outgrow 32k entries even on a
+               noisy photo-like logo): flat-color logos repeat the
+               same few colors millions of times. The cache stores
+               the changed-color index for that bucket, or -1 when
+               its nearest palette color is unchanged; the repaint
+               itself always uses the pixel's exact values. */
+            var cache = {};
+            var data = p.ctx.getImageData(0, 0, p.w, p.h);
+            var px = data.data;
+            for (var i = 0; i < px.length; i += 4) {
+              if (px[i + 3] === 0) continue;
+              var r = px[i], g = px[i + 1], b = px[i + 2];
+              var ck = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+              var ci = cache[ck];
+              if (ci === undefined) {
+                var bestD = Infinity, bestE = null;
+                for (var j = 0; j < pal.length; j++) {
+                  var dr = r - pal[j].r, dg = g - pal[j].g, db = b - pal[j].b;
+                  var dd = dr * dr + dg * dg + db * db;
+                  if (dd < bestD) { bestD = dd; bestE = pal[j]; }
+                }
+                ci = -1;
+                if (bestE) {
+                  for (var k = 0; k < changes.length; k++) {
+                    if (changes[k].rep.key === bestE.key) { ci = k; break; }
+                  }
+                }
+                cache[ck] = ci;
+              }
+              if (ci < 0) continue;
+              var ch = changes[ci];
+              px[i]     = Math.max(0, Math.min(255, ch.to.r + (r - ch.rep.r)));
+              px[i + 1] = Math.max(0, Math.min(255, ch.to.g + (g - ch.rep.g)));
+              px[i + 2] = Math.max(0, Math.min(255, ch.to.b + (b - ch.rep.b)));
+            }
+            p.ctx.putImageData(data, 0, 0);
+            d.perColorSrc = p.canvas.toDataURL("image/png");
+            d.processedW = p.w;
+            d.toolNote = "Changed just that one color in your logo — every other color is untouched. The change is noted on your order summary.";
+            render();
+            /* The final color count may have crossed the Screen
+               extra-color line either way — re-run the reminder
+               check (it is keyed on the count, so it only speaks
+               when the charge actually appears). */
+            maybeShowColorChargeNotice();
+          }).catch(function () {
+            if (seq !== d.procSeq) return;
+            d.perColorSrc = null;
+            d.toolNote = "That file couldn’t be recolored here — the original is unchanged.";
+            render();
+          });
+        }
+        /* One per-color pick from the panel. key is the palette
+           entry's bucket key (a string, from the row's data
+           attribute); hex is the picked replacement, or null to
+           reset that one color back to its original. A per-color
+           pick supersedes a single Logo color and any inversion
+           (same rule as setLogoColor), and — like them — it runs
+           the background removal FIRST when the background is
+           still on, so the repaint never paints the background;
+           if the background can't come off, the pick is undone
+           and the logo keeps its colors. */
+        function setPerColor(key, hex) {
+          var d = currentDesign(); if (!d) return;
+          if (!d.perColorMap) d.perColorMap = {};
+          var had = d.perColorMap[key];
+          if (hex) d.perColorMap[key] = hex.toLowerCase();
+          else delete d.perColorMap[key];
+          if (!hasPerColorChanges(d)) {
+            d.procSeq++;
+            d.perColorSrc = null;
+            if (!d.bgSrc && !d.colorSrc) d.processedW = 0;
+            d.toolNote = "Back to the logo’s original colors.";
+            render();
+            maybeShowColorChargeNotice();
+            return;
+          }
+          d.colorHex = null; d.colorSrc = null;
+          d.inverted = false; d.invSrc = null;
+          d.white = false;
+          if (needsAutoBgRemoval(d)) {
+            applyRemoveBg(d, function (ok) {
+              if (ok) { applyPerColor(d); return; }
+              /* Removal failed: undo this pick (restore the
+                 previous mapping state) rather than repaint the
+                 un-cleaned logo. */
+              if (had) d.perColorMap[key] = had; else delete d.perColorMap[key];
+              if (!hasPerColorChanges(d)) d.perColorSrc = null;
+              render();
+            });
+          } else applyPerColor(d);
+        }
         /* Invert colors and the Logo color recolor transform
            EVERY visible pixel of the artwork they process
            (bgSrc || src) — transparency is the only thing they
@@ -3270,6 +3568,11 @@
              paints over the whole logo, so a stale inverted copy
              must never show through displaySrc again. */
           d.inverted = false; d.invSrc = null;
+          /* A one-color pick (or going back to Original) also
+             supersedes any per-color changes: the whole logo is
+             recolored as one color, so per-color repaints must
+             never show through displaySrc again. */
+          d.perColorMap = {}; d.perColorSrc = null;
           if (!hex) {
             d.procSeq++;
             d.colorHex = null; d.colorSrc = null;
@@ -3347,8 +3650,11 @@
           if (on) {
             /* Inversion and a picked Logo color exclude each
                other — inverting wins here because this runs only
-               from the customer's explicit invert tap. */
+               from the customer's explicit invert tap. Per-color
+               changes are cleared too: they are keyed to the
+               logo's original colors, which the swap reverses. */
             d.colorHex = null; d.colorSrc = null;
+            d.perColorMap = {}; d.perColorSrc = null;
             if (needsAutoBgRemoval(d)) {
               /* Background still on: take it off FIRST (see
                  needsAutoBgRemoval), then invert the cleaned
@@ -3689,6 +3995,9 @@
             if (onDone) onDone(true);
             else if (d.colorHex) applyRecolor(d);
             /* A removed background changes the artwork the
+               per-color repaint is made from — rebuild it too. */
+            else if (hasPerColorChanges(d)) applyPerColor(d);
+            /* A removed background changes the artwork the
                inverted copy is made from — rebuild it too. */
             else if (d.inverted) applyInvert(d);
             /* Follow-up question (owner, 2026-11-17): when some of
@@ -3807,7 +4116,90 @@
           lastArtSrc = null; /* force the stage picture back to the original */
           render();
           if (d.colorHex) applyRecolor(d);
+          else if (hasPerColorChanges(d)) applyPerColor(d);
           else if (d.inverted) applyInvert(d);
+        }
+
+        /* Per-color panel rows: one row per distinct color the
+           detection found in the CURRENT location's logo, each
+           with its own color picker (and a Reset once changed).
+           Rebuilt only when something it shows actually changed —
+           its signature covers the location, the artwork version,
+           the palette and the change map — because render() runs
+           on every drag frame and rebuilding mid-pick would close
+           the customer's open color picker. The rows' events are
+           delegated from #perColorList (see the wiring below), so
+           rebuilt rows need no re-wiring. */
+        var lastPerColorSig = null;
+        function renderPerColorPanel(d) {
+          var list = document.getElementById("perColorList");
+          var hint = document.getElementById("perColorHint");
+          if (!list || !hint) return;
+          var pal = (d && d.palette) || [];
+          var sig = state.placement + "|" + (d ? (d.bgSrc || d.src || "") : "") + "|" +
+            pal.map(function (e) { return e.key + ":" + e.hex; }).join(",") + "|" +
+            (d && d.perColorMap ? JSON.stringify(d.perColorMap) : "") + "|" +
+            (d ? (d.colorAnalyzedSrc === (d.bgSrc || d.src) ? "done" : "wait") : "none");
+          if (sig === lastPerColorSig) return;
+          lastPerColorSig = sig;
+          list.innerHTML = "";
+          if (!d) {
+            hint.textContent = "Upload a logo and each of its colors will show here — change any one on its own.";
+            return;
+          }
+          if (!pal.length) {
+            if (d.colorAnalyzedSrc !== (d.bgSrc || d.src)) {
+              hint.textContent = "Reading your logo’s colors…";
+              /* Safety net: the upload flow already runs the
+                 analysis, but if this logo version was never
+                 analyzed, start it once per version. */
+              if (d._palReqSrc !== (d.bgSrc || d.src)) {
+                d._palReqSrc = d.bgSrc || d.src;
+                analyzeDesignColors(d);
+              }
+            } else {
+              hint.textContent = "We couldn’t pick out separate colors in this logo — the one-color picks above still work.";
+            }
+            return;
+          }
+          hint.textContent = "Tap a color’s picker to change just that color — the rest of your logo stays the same.";
+          pal.forEach(function (e) {
+            var target = d.perColorMap ? d.perColorMap[e.key] : null;
+            var name = colorNameFor(e.r, e.g, e.b);
+            var row = document.createElement("div");
+            row.className = "per-color-row" + (target ? " changed" : "");
+            var dot = document.createElement("span");
+            dot.className = "pcdot";
+            dot.style.background = e.hex;
+            row.appendChild(dot);
+            var label = document.createElement("span");
+            label.className = "pc-label";
+            var nm = document.createElement("span");
+            nm.className = "pc-name";
+            nm.textContent = name;
+            label.appendChild(nm);
+            var hx = document.createElement("span");
+            hx.className = "pc-hex";
+            hx.textContent = target ? e.hex.toUpperCase() + " → " + target.toUpperCase() : e.hex.toUpperCase();
+            label.appendChild(hx);
+            row.appendChild(label);
+            var inp = document.createElement("input");
+            inp.type = "color";
+            inp.value = target || e.hex;
+            inp.setAttribute("data-per-key", String(e.key));
+            inp.setAttribute("aria-label", "Change the " + name + " color (" + e.hex.toUpperCase() + ") in your logo");
+            row.appendChild(inp);
+            if (target) {
+              var rst = document.createElement("button");
+              rst.type = "button";
+              rst.className = "pc-reset";
+              rst.textContent = "Reset";
+              rst.setAttribute("data-per-reset", String(e.key));
+              rst.setAttribute("aria-label", "Put the " + name + " color back to its original " + e.hex.toUpperCase());
+              row.appendChild(rst);
+            }
+            list.appendChild(row);
+          });
         }
 
         /* Business info strip (Shop settings J): the shop's contact
@@ -3986,6 +4378,10 @@
             });
             if (document.activeElement !== logoColorInput && d.colorHex) logoColorInput.value = d.colorHex;
             logoColorHex.textContent = d.colorHex ? "Current: " + d.colorHex.toUpperCase() : "Current: original colors";
+            /* Per-color rows for THIS location's logo (built only
+               when the logo / palette / changes actually change —
+               see renderPerColorPanel). */
+            renderPerColorPanel(d);
             /* Background removal lives ONLY in the tools card
                under the print size picker in the preview column,
                and the block is always visible so the
@@ -4006,12 +4402,13 @@
                invert" while this location's logo is inverted. */
             if (invertBtn) {
               invertBtn.hidden = false;
-              invertBtn.disabled = !!d.colorHex || !d.monoLogo;
+              invertBtn.disabled = !!d.colorHex || hasPerColorChanges(d) || !d.monoLogo;
               invertBtn.textContent = d.inverted ? "Undo invert" : "Invert colors";
             }
           } else {
             lastArtSrc = null;
             artFileName.textContent = "";
+            renderPerColorPanel(null);
             /* No logo on this location yet: keep the background
                removal block visible (so the buttons are there to be
                seen) but greyed out until a logo is uploaded here. */
@@ -4712,7 +5109,7 @@
             state.product === "apron" ? "Apron front pocket (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             p === "pocket" ? placementLabel(p) + " (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             (state.printSize === "standard" ? "Standard" : "Oversize") + " (up to " + a.maxW + "″ × " + a.maxH + "″)";
-          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (d.inverted && !d.colorHex ? ", logo colors INVERTED (black and white swapped by the customer so the logo shows on this shirt color)" : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
+          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (perColorSummaryText(d) ? ", " + perColorSummaryText(d) : "") + (d.inverted && !d.colorHex ? ", logo colors INVERTED (black and white swapped by the customer so the logo shows on this shirt color)" : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
         }
         /* Exact uploaded logo file names ("Front: name.png", …) for
            the current design — used by the summary's file notes and
@@ -5586,6 +5983,10 @@
         }
         function logoClashKind(d) {
           if (!d || !d.src || d.colorHex) return null;
+          /* Per-color changes are the customer's own color
+             choices, made color by color — never offer to invert
+             over them. */
+          if (hasPerColorChanges(d)) return null;
           if (d.colorAnalyzedSrc !== (d.bgSrc || d.src)) return null;
           var rgb = hexToRgb(shirtEntry().hex);
           if (!rgb) return null;
@@ -6026,6 +6427,27 @@
         logoColorInput.addEventListener("change", function () {
           setLogoColor(logoColorInput.value);
         });
+        /* Per-color rows (rebuilt by renderPerColorPanel): one
+           delegated change listener for every row's picker and
+           one delegated click listener for the Reset buttons, so
+           rebuilt rows work without re-wiring. 'change' (not
+           'input') matches the Custom color picker above — the
+           repaint runs once, when the customer commits a color. */
+        var perColorListEl = document.getElementById("perColorList");
+        if (perColorListEl) {
+          perColorListEl.addEventListener("change", function (ev) {
+            var t = ev.target;
+            if (t && t.getAttribute && t.getAttribute("data-per-key") !== null) {
+              setPerColor(t.getAttribute("data-per-key"), t.value);
+            }
+          });
+          perColorListEl.addEventListener("click", function (ev) {
+            var t = ev.target;
+            if (t && t.getAttribute && t.getAttribute("data-per-reset") !== null) {
+              setPerColor(t.getAttribute("data-per-reset"), null);
+            }
+          });
+        }
         /* ---------- Phone-only collapsible color panels ----------
            On a phone each side panel starts collapsed behind its
            compact color control (see .color-toggle in the CSS):
@@ -6065,6 +6487,7 @@
           b.addEventListener("click", function () { setColorPanelOpen(logoPanelEl, logoToggleEl, false); });
         });
         logoColorInput.addEventListener("change", function () { setColorPanelOpen(logoPanelEl, logoToggleEl, false); });
+        if (perColorListEl) perColorListEl.addEventListener("change", function () { setColorPanelOpen(logoPanelEl, logoToggleEl, false); });
         /* Mirror the current colors onto the compact controls:
            the garment side copies the pressed swatch's dot and
            name (and the panel's own heading, so it reads "Hoodie
@@ -6527,6 +6950,7 @@
                 naturalW: isSvg ? 0 : probe.naturalWidth,
                 isVector: isSvg, isDefault: false, white: false, blob: true,
                 colorHex: null, colorSrc: null, bgSrc: null, bgRemoved: false, bgHelp: false,
+                palette: [], perColorMap: {}, perColorSrc: null,
                 bgTol: 60, processedW: 0, procSeq: 0, toolNote: "",
                 multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0, colorNoticeKey: "",
                 inverted: false, invSrc: null, invertNoticeKey: "", hasBlack: false, hasWhite: false, monoLogo: false,
@@ -7688,6 +8112,10 @@
           analyzeDesignColors: analyzeDesignColors,
           countDistinctColorsInImage: countDistinctColorsInImage,
           logoColorCount: logoColorCount,
+          setPerColor: setPerColor,
+          hasPerColorChanges: hasPerColorChanges,
+          perColorSummaryText: perColorSummaryText,
+          displaySrc: displaySrc,
           extraColorFeeFor: extraColorFeeFor,
           screenColorChargeLocations: screenColorChargeLocations,
           buildPayNowPayload: buildPayNowPayload,
@@ -7703,6 +8131,7 @@
                 aspect: aspect, naturalW: img.naturalWidth || 0,
                 isVector: false, isDefault: false, white: false, blob: false,
                 colorHex: null, colorSrc: null, bgSrc: null, bgRemoved: false, bgHelp: false,
+                palette: [], perColorMap: {}, perColorSrc: null,
                 bgTol: 60, processedW: 0, procSeq: 0, toolNote: "",
                 multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0, colorNoticeKey: "",
                 x: 0, y: 0, w: p === "pocket" ? 92 : 82
@@ -7930,6 +8359,12 @@
           "White": "Blanco", "Black": "Negro", "Navy": "Azul marino", "Grey": "Gris", "Light Gray": "Gris claro", "Red": "Rojo", "Neon Green": "Verde neón", "Orange": "Naranja", "Royal Blue": "Azul royal", "Denim": "Mezclilla", "Khaki": "Caqui",
           "Logo color": "Color del logo", "Original colors": "Colores originales", "Gold": "Dorado",
           "Custom color": "Color personalizado", "Current: original colors": "Actual: colores originales",
+          "Change one color": "Cambiar un solo color",
+          "Upload a logo and each of its colors will show here — change any one on its own.": "Sube un logo y cada uno de sus colores aparecerá aquí — cambia cualquiera por separado.",
+          "Reading your logo’s colors…": "Leyendo los colores de tu logo…",
+          "We couldn’t pick out separate colors in this logo — the one-color picks above still work.": "No pudimos distinguir colores separados en este logo — las opciones de un solo color de arriba siguen funcionando.",
+          "Tap a color’s picker to change just that color — the rest of your logo stays the same.": "Toca el selector de un color para cambiar solo ese color — el resto de tu logo se queda igual.",
+          "Reset": "Restablecer", "Yellow": "Amarillo", "Blue": "Azul", "Green": "Verde", "Purple": "Morado", "Pink": "Rosa", "Brown": "Marrón", "Tan": "Beige", "Dark red": "Rojo oscuro", "Dark green": "Verde oscuro", "Light blue": "Azul claro",
           "Enlarge": "Ampliar",
           "Nothing on this side yet.": "Todavía no hay nada en este lado.",
           "Tap the Upload button to add it.": "Toca el botón Subir para agregarlo.",
