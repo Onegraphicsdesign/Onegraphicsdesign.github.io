@@ -3020,11 +3020,12 @@
            recolor applied (bgSrc || src). A design whose Logo
            color is set (colorHex — any chip other than "Original",
            or the custom picker) counts as ONE color anyway:
-           applyRecolor() repaints the rendered artwork's ink in
-           that single color (white that is part of the design
-           itself stays white — see applyRecolor), so a picked
-           Logo color is priced as the one-color print it is
-           ordered as, and no extra-color charge applies. */
+           applyRecolor() converts the artwork to black and white
+           by darkness and repaints only the black parts in that
+           single color (the white parts stay white — see
+           applyRecolor), so a picked Logo color is priced as the
+           one-color print it is ordered as, and no extra-color
+           charge applies. */
         function countDistinctColorsInImage(img) {
           try {
             var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
@@ -3226,8 +3227,9 @@
         /* The color count a placed logo is charged on. A design
            whose Logo color is set (colorHex) counts as 1:
            applyRecolor() has turned (or is turning) the rendered
-           artwork's ink into that one color (design white stays
-           white), so it is priced as a one-color print and no
+           artwork into a black-and-white version whose black
+           parts are that one color (the white parts stay white),
+           so it is priced as a one-color print and no
            extra-color charge applies to it. A design with
            per-color changes counts its FINAL colors (above), so
            the Screen extra-color charge follows the colors the
@@ -3316,35 +3318,34 @@
           ctx.drawImage(img, 0, 0, cw, ch);
           return { canvas: c, ctx: ctx, w: cw, h: ch };
         }
-        /* Recolor (owner fix, 2026-11-17): the logo's colors are
-           detected FIRST — the same countDistinctColorsInImage
-           analysis the color count uses — and only the INK (the
-           text and lines) is repainted in the chosen color.
-           White that is part of the design itself (a white circle
-           the lettering sits on, say) is NOT ink: those pixels
-           keep their white, so the design stays readable instead
-           of collapsing into one solid blob of the picked color.
-           The old version painted EVERY visible pixel, so the
-           Escuela Taqueria logo (red / yellow / blue lettering on
-           a white circle, already transparent, no background)
-           became a plain solid white disc when white was picked
-           and the lettering vanished. White that is only the
-           image's background never counts as design white (the
-           analysis's edge rule excludes it), so a logo whose
-           background is still on recolors exactly as before.
-           Design white is only kept when the logo has other
-           colors besides the white — a logo that is white alone
-           has no ink to protect, so picking a color still
-           repaints the whole thing. The result lands in
+        /* Recolor (owner, 2026-11-17, reworked same day): when the
+           customer picks ONE color for the whole logo, the logo is
+           first converted to black and white by each pixel's
+           darkness, and only the BLACK parts of that conversion
+           are repainted in the picked color — the white parts
+           stay white. Darkness is the pixel's perceived luminance:
+           clearly dark colors (luminance at or below 96) become
+           black, clearly light colors (at or above 160) become
+           white, and the band between blends the two so
+           anti-aliased edges stay smooth instead of going jagged.
+           On the Escuela Taqueria logo the red shadow and the
+           blue outline are dark, so they take the picked color,
+           while the yellow "Taqueria" fill is a light color and
+           turns white along with the white face of ESCUELA and
+           the white circle — fill and outline stay separate, the
+           lettering stays readable, and the result stays as close
+           as possible to the uploaded design. The earlier version
+           painted every ink pixel the picked color, so the yellow
+           fill and the blue outline merged into one solid blob
+           and the design was lost. A black-only logo behaves
+           exactly as it always did: black letters take the picked
+           color, white counters stay white. The result lands in
            d.colorSrc, and the stage, the enlarged view and the
            emailed design preview all read displaySrc(), so the
-           recolored logo shows the same everywhere. Picking a
-           color that matches the kept white gets a warning —
-           see maybeShowRecolorMatchNotice below. */
-        function isDesignWhitePixel(r, g, b) {
-          var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-          return mn >= 224 && mx - mn <= 32;
-        }
+           recolored logo shows the same everywhere. Picking white
+           on a logo that has design white still gets the warning
+           below — the dark parts turn white too and the lettering
+           can disappear into the white parts. */
         function applyRecolor(d) {
           if (!d || !d.colorHex) return;
           var rgb = hexToRgb(d.colorHex);
@@ -3362,13 +3363,21 @@
             var px = data.data;
             for (var i = 0; i < px.length; i += 4) {
               if (px[i + 3] === 0) continue;
-              if (keepWhite && isDesignWhitePixel(px[i], px[i + 1], px[i + 2])) continue;
-              px[i] = rgb.r; px[i + 1] = rgb.g; px[i + 2] = rgb.b;
+              /* Black-and-white by darkness: f is how BLACK this
+                 pixel is in the converted copy — 1 for dark
+                 colors, 0 for light ones, blended in between so
+                 edges stay smooth. Black parts take the picked
+                 color, white parts stay white. */
+              var lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+              var f = lum <= 96 ? 1 : (lum >= 160 ? 0 : (160 - lum) / 64);
+              px[i]     = Math.round(255 + (rgb.r - 255) * f);
+              px[i + 1] = Math.round(255 + (rgb.g - 255) * f);
+              px[i + 2] = Math.round(255 + (rgb.b - 255) * f);
             }
             p.ctx.putImageData(data, 0, 0);
             d.colorSrc = p.canvas.toDataURL("image/png");
             d.processedW = p.w;
-            d.toolNote = "Logo color set to " + d.colorHex.toUpperCase() + "." + (keepWhite ? " The white parts of your design stay white." : "") + " Pick “Original colors” to undo.";
+            d.toolNote = "Logo color set to " + d.colorHex.toUpperCase() + " — your design was changed to black and white first, so the dark parts are now that color and the light parts stay white. Pick “Original colors” to undo.";
             render();
             maybeShowRecolorMatchNotice(d, keepWhite);
           }).catch(function () {
@@ -5951,7 +5960,7 @@
           actions.push({ label: "Cancel — keep all my colors", onPick: null });
           showNotice(
             "Pick your one color",
-            "<p>Your logo will be recolored to the single color you pick — the design prints in that one color (white parts that are part of the design itself stay white), and the extra-color charge comes off your price.</p>",
+            "<p>Your logo will be changed to black and white first, then printed in the single color you pick — the dark parts of the design print in that color, the white parts stay white, and the extra-color charge comes off your price.</p>",
             actions
           );
         }
@@ -8424,7 +8433,7 @@
           "Yes — pick one color": "Sí — elegir un color",
           "Keep all my colors": "Dejar todos mis colores",
           "Pick your one color": "Elige tu color",
-          "Your logo will be recolored to the single color you pick — the design prints in that one color (white parts that are part of the design itself stay white), and the extra-color charge comes off your price.": "Tu logo se cambiará al único color que elijas — el diseño se imprime en ese solo color (las partes blancas que son parte del diseño se quedan blancas), y el cargo por colores extra sale de tu precio.",
+          "Your logo will be changed to black and white first, then printed in the single color you pick — the dark parts of the design print in that color, the white parts stay white, and the extra-color charge comes off your price.": "Tu logo primero se cambiará a blanco y negro, y luego se imprimirá en el único color que elijas — las partes oscuras del diseño se imprimen en ese color, las partes blancas se quedan blancas, y el cargo por colores extra sale de tu precio.",
           "Careful — your logo already has white in it": "Cuidado — tu logo ya tiene blanco",
           "Part of this logo is white by design — like a white circle or panel — and those white parts stay white when we recolor.": "Parte de este logo es blanca por diseño — como un círculo o panel blanco — y esas partes blancas se quedan blancas cuando cambiamos el color.",
           "You picked white, so the rest of the design turns white too — and white on white blends in. The lettering on the white parts may disappear.": "Elegiste blanco, así que el resto del diseño también se vuelve blanco — y blanco sobre blanco se confunde. Las letras sobre las partes blancas pueden desaparecer.",
