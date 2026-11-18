@@ -1645,6 +1645,7 @@
               <div class="btn-row bg-btn-row">
                 <button type="button" class="btn small" id="removeBgBtn" disabled>Remove Background</button>
                 <button type="button" class="btn small" id="restoreBgBtn" disabled>Restore Background</button>
+                <button type="button" class="btn small" id="invertBtn" disabled>Invert colors</button>
               </div>
             </div>
             <p class="error" id="uploadError"></p>
@@ -2857,6 +2858,7 @@
         var logoColorHex = document.getElementById("logoColorHex");
         var removeBgBtn = document.getElementById("removeBgBtn");
         var restoreBgBtn = document.getElementById("restoreBgBtn");
+        var invertBtn = document.getElementById("invertBtn");
         var bgToolsEl = document.getElementById("bgTools");
 
         function currentDesign() { return state.designs[state.placement]; }
@@ -2879,7 +2881,7 @@
            Both run in the browser on a canvas copy of the artwork.
            displaySrc() is what the stage and the saved PNG actually use:
            recolored version first, then background-removed, then original. */
-        function displaySrc(d) { return d.colorSrc || d.bgSrc || d.src; }
+        function displaySrc(d) { return d.colorSrc || d.invSrc || d.bgSrc || d.src; }
         var lastArtSrc = null;
         function hexToRgb(hex) {
           var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
@@ -2982,7 +2984,7 @@
                 edgeTotal++;
               }
             }
-            if (!total) return { count: 0, multi: false, total: 0 };
+            if (!total) return { count: 0, multi: false, total: 0, hasBlack: false, hasWhite: false, mono: false };
             /* White-background rule: the quantized white bucket
                (every channel in the top bucket, >= 224) is the
                image background — and is not counted — when white
@@ -3011,6 +3013,18 @@
             }
             var minCount = Math.max(3, Math.floor(total * 0.01));
             var distinct = 0;
+            /* Invert-colors support (owner, 2026-11-17): alongside
+               the count, note whether the counted colors include a
+               near-black and/or a near-white that is part of the
+               design (white that is only the image background was
+               already excluded above as bgKey), and whether EVERY
+               counted color is neutral (black / white / greys) —
+               a monochrome logo. Those three facts drive the
+               hard-to-see-on-this-shirt check further down: black
+               content vanishes on a dark shirt, white content on a
+               light one, and only a monochrome logo may be offered
+               the black↔white inversion. */
+            var hasBlack = false, hasWhite = false, mono = true;
             for (key in counts) {
               if (bgKey !== null && Number(key) === bgKey) continue;
               if (counts[key] < minCount) continue;
@@ -3018,8 +3032,16 @@
                  even when they cover more than the 1% share. */
               if ((interior[key] || 0) < Math.max(3, Math.floor(counts[key] * 0.02))) continue;
               distinct++;
+              var kN = Number(key);
+              var rB = (kN >> 6) & 7, gB = (kN >> 3) & 7, bB = kN & 7;
+              var bMax = Math.max(rB, gB, bB), bMin = Math.min(rB, gB, bB);
+              if (bMax - bMin > 1) mono = false;
+              else {
+                if (bMax <= 1) hasBlack = true;
+                if (bMin >= 6) hasWhite = true;
+              }
             }
-            return { count: distinct, multi: distinct > 1, total: total };
+            return { count: distinct, multi: distinct > 1, total: total, hasBlack: hasBlack, hasWhite: hasWhite, mono: distinct > 0 && mono };
           } catch (err) {
             return null;
           }
@@ -3035,18 +3057,21 @@
             if (d.colorSeq !== seq) return null;
             var res = countDistinctColorsInImage(img);
             d.colorAnalyzedSrc = srcToAnalyze;
-            if (res) { d.multiColor = !!res.multi; d.colorCount = res.count; }
-            else { d.multiColor = false; d.colorCount = 0; }
+            if (res) { d.multiColor = !!res.multi; d.colorCount = res.count; d.hasBlack = !!res.hasBlack; d.hasWhite = !!res.hasWhite; d.monoLogo = !!res.mono; }
+            else { d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false; }
             render();
             /* A freshly counted logo may carry the Screen
                extra-color charge for the first time — prompt
                the reminder (once per logo version). */
             maybeShowColorChargeNotice();
+            /* …and its colors may clash with the picked shirt
+               color — offer the invert / warn once per combo. */
+            maybeShowInvertNotice();
             return res;
           }).catch(function () {
             if (d.colorSeq !== seq) return null;
             d.colorAnalyzedSrc = srcToAnalyze;
-            d.multiColor = false; d.colorCount = 0;
+            d.multiColor = false; d.colorCount = 0; d.hasBlack = false; d.hasWhite = false; d.monoLogo = false;
             render();
             return null;
           });
@@ -3152,9 +3177,38 @@
             render();
           });
         }
+        /* Invert colors and the Logo color recolor transform
+           EVERY visible pixel of the artwork they process
+           (bgSrc || src) — transparency is the only thing they
+           keep. Run on a logo whose background has NOT been
+           removed yet, the background is a visible pixel too:
+           inverting a black-script-on-white logo swapped the
+           white background to black and the black ink to white,
+           so the whole rectangle read as one solid black box,
+           and a Logo color pick painted the box the picked color
+           (owner's bug report, 2026-11-17). So both transforms
+           make sure the background is OFF first: when it isn't,
+           the existing flood-fill removal (applyRemoveBg) runs
+           first and the transform is applied to the cleaned
+           artwork only — one tap, no extra step for the customer.
+           The fill grows in from the edges, so white that is part
+           of the design itself (a white circle sealed inside the
+           artwork) survives it and still transforms as designed.
+           When the removal honestly can't cut the background out,
+           the transform is NOT applied — the logo keeps its
+           original colors and the removal's note explains why,
+           instead of the customer getting a solid box. */
+        function needsAutoBgRemoval(d) {
+          return !!d && !d.isVector && !d.bgRemoved && !!d.src;
+        }
         function setLogoColor(hex) {
           var d = currentDesign(); if (!d) return;
           d.white = false;
+          /* Picking a Logo color (or going back to the original
+             colors) supersedes any color inversion: the recolor
+             paints over the whole logo, so a stale inverted copy
+             must never show through displaySrc again. */
+          d.inverted = false; d.invSrc = null;
           if (!hex) {
             d.procSeq++;
             d.colorHex = null; d.colorSrc = null;
@@ -3165,10 +3219,109 @@
                count (and its Screen charge) back — prompt the
                reminder if this logo version hasn't shown it. */
             maybeShowColorChargeNotice();
+            /* …and the original colors may clash with the shirt
+               color again — re-check the invert offer too. */
+            maybeShowInvertNotice();
             return;
           }
           d.colorHex = hex.toLowerCase();
-          applyRecolor(d);
+          if (needsAutoBgRemoval(d)) {
+            /* Background still on: take it off FIRST (see
+               needsAutoBgRemoval), then recolor the cleaned
+               artwork. If the background can't come off, the pick
+               is undone — recoloring the un-cleaned logo would
+               paint its background solid. */
+            applyRemoveBg(d, function (ok) {
+              if (ok) { applyRecolor(d); return; }
+              d.colorHex = null; d.colorSrc = null;
+              if (!d.bgSrc) d.processedW = 0;
+              render();
+            });
+          } else applyRecolor(d);
+        }
+        /* Invert colors (owner, 2026-11-17): swap black and white
+           in the logo — every visible pixel's RGB is flipped
+           (255 − channel), transparency untouched — so a
+           black-and-white logo that would vanish on the picked
+           shirt color (black parts on a black shirt, a white
+           circle on a white shirt) stays the same design but
+           readable. Like applyRecolor, the inverted copy is
+           rendered from the same source (bgSrc || src) into
+           d.invSrc and displaySrc prefers it, so the stage, the
+           enlarged view and the emailed design preview all show
+           the inverted logo. Inversion is only ever applied when
+           the customer taps for it (the clash prompt below or the
+           Invert colors button in the logo tools card) — never
+           automatically — and only to monochrome logos; the
+           color count is unchanged by a black↔white swap, so no
+           price moves. */
+        function applyInvert(d) {
+          if (!d) return;
+          var seq = ++d.procSeq;
+          d.toolNote = "Inverting your logo’s colors…";
+          render();
+          loadForProcess(d.bgSrc || d.src).then(function (img) {
+            if (seq !== d.procSeq) return;
+            var p = processCanvas(img);
+            if (!p) { d.toolNote = "That file couldn’t be inverted here — the original is unchanged."; render(); return; }
+            var data = p.ctx.getImageData(0, 0, p.w, p.h);
+            var px = data.data;
+            for (var i = 0; i < px.length; i += 4) {
+              if (px[i + 3] > 0) { px[i] = 255 - px[i]; px[i + 1] = 255 - px[i + 1]; px[i + 2] = 255 - px[i + 2]; }
+            }
+            p.ctx.putImageData(data, 0, 0);
+            d.invSrc = p.canvas.toDataURL("image/png");
+            d.processedW = p.w;
+            d.toolNote = "Logo colors inverted — black and white swapped, so it stands out on this shirt color. Tap “Undo invert” in the logo tools to go back.";
+            render();
+          }).catch(function () {
+            if (seq !== d.procSeq) return;
+            d.invSrc = null;
+            d.toolNote = "That file couldn’t be inverted here — the original is unchanged.";
+            render();
+          });
+        }
+        function setInverted(d, on) {
+          if (!d) return;
+          if (on) {
+            /* Inversion and a picked Logo color exclude each
+               other — inverting wins here because this runs only
+               from the customer's explicit invert tap. */
+            d.colorHex = null; d.colorSrc = null;
+            if (needsAutoBgRemoval(d)) {
+              /* Background still on: take it off FIRST (see
+                 needsAutoBgRemoval), then invert the cleaned
+                 artwork — inverting the un-cleaned logo would swap
+                 its background too and box the design in a solid
+                 rectangle. If the background can't come off, the
+                 logo is left exactly as it was. This is also what
+                 the clash prompt below relies on: it may offer
+                 Invert on a logo whose background is still on
+                 precisely because this auto-removal runs first. */
+              applyRemoveBg(d, function (ok) {
+                if (!ok) { render(); return; }
+                d.inverted = true;
+                applyInvert(d);
+              });
+            } else {
+              d.inverted = true;
+              applyInvert(d);
+            }
+          } else {
+            d.procSeq++;
+            d.inverted = false; d.invSrc = null;
+            if (!d.bgSrc && !d.colorSrc) d.processedW = 0;
+            d.toolNote = "Back to the logo’s original colors.";
+            /* This exact combo (logo + shirt color + not inverted)
+               was just chosen by the customer — mark it seen so
+               the clash check below doesn't instantly re-offer
+               the inversion they just undid. A different shirt
+               color makes a new key and can prompt again. */
+            d.invertNoticeKey = invertNoticeKeyFor(d);
+            render();
+            /* The original colors may clash with the shirt again. */
+            maybeShowInvertNotice();
+          }
         }
         /* Background removal: flood-fill inward from the picture's edges.
            The previous version averaged four tiny corner patches into ONE
@@ -3184,16 +3337,30 @@
            grew from. That follows gradients and shadows, and never touches
            same-colored areas sealed inside the logo. Approximate — best
            on solid backgrounds. */
-        function applyRemoveBg(d) {
+        /* onDone (optional): a transform (Invert colors / Logo
+           color) that needs the background OFF first passes a
+           continuation — onDone(true) once the background is off
+           (or was already transparent), onDone(false) when the
+           background honestly couldn't be removed, in which case
+           the caller must NOT apply its transform. With no
+           onDone this is the plain Remove Background button flow,
+           unchanged. */
+        function applyRemoveBg(d, onDone) {
           if (!d) return;
-          if (d.isVector) { d.toolNote = "SVG files normally already have a transparent background — nothing to remove."; render(); return; }
+          if (d.isVector) {
+            /* A chained transform still runs: an SVG's background
+               is normally already transparent, so there is nothing
+               for the fill to take off. */
+            if (onDone) { onDone(true); return; }
+            d.toolNote = "SVG files normally already have a transparent background — nothing to remove."; render(); return;
+          }
           var seq = ++d.procSeq;
           d.toolNote = "Removing the background…";
           render();
           loadForProcess(d.src).then(function (img) {
             if (seq !== d.procSeq) return;
             var p = processCanvas(img, BG_PROC_MAX);
-            if (!p) { d.toolNote = "That file couldn’t be processed here — the original is unchanged."; render(); return; }
+            if (!p) { d.toolNote = "That file couldn’t be processed here — the original is unchanged."; render(); if (onDone) onDone(false); return; }
             var data = p.ctx.getImageData(0, 0, p.w, p.h);
             var px = data.data, W = p.w, H = p.h, N = W * H;
 
@@ -3210,6 +3377,10 @@
             for (bx = 0; bx < W; bx++) { sampleBorder(bx * 4); sampleBorder(((H - 1) * W + bx) * 4); }
             for (by = 1; by < H - 1; by++) { sampleBorder((by * W) * 4); sampleBorder((by * W + W - 1) * 4); }
             if (borderTotal && borderClear / borderTotal >= 0.75) {
+              /* Chained transform: the background is already off,
+                 which is all the transform needed — proceed without
+                 the "nothing to remove" prompt interrupting it. */
+              if (onDone) { onDone(true); return; }
               d.toolNote = "Good news — this file already has a transparent background, so there’s nothing to remove.";
               /* Friendly prompt, not just the note text: the image
                  already has no background, so say so out loud —
@@ -3220,7 +3391,7 @@
               );
               render(); return;
             }
-            if (!bR.length) { d.toolNote = "That file couldn’t be processed here — the original is unchanged."; render(); return; }
+            if (!bR.length) { d.toolNote = "That file couldn’t be processed here — the original is unchanged."; render(); if (onDone) onDone(false); return; }
             function medianOf(arr) { arr.sort(function (a, b) { return a - b; }); return arr[arr.length >> 1]; }
             var medR = medianOf(bR), medG = medianOf(bG), medB = medianOf(bB);
 
@@ -3424,7 +3595,11 @@
                that is not a removal, so report it honestly instead. */
             if (!removedCount || !interiorRemoved) {
               d.toolNote = "The background couldn’t be removed from this picture — it isn’t one connected background around the edges, and your picture is unchanged. Busy photo backgrounds can’t be cut out here; the original file (AI / PSD / PDF) is what production would use.";
-              render(); return;
+              render();
+              /* A chained transform must NOT run on the un-cleaned
+                 logo — it would paint the background solid. */
+              if (onDone) onDone(false);
+              return;
             }
             p.ctx.putImageData(data, 0, 0);
             d.bgSrc = p.canvas.toDataURL("image/png");
@@ -3448,7 +3623,13 @@
             analyzeDesignColors(d);
             lastArtSrc = null;
             render();
-            if (d.colorHex) applyRecolor(d);
+            /* A chained transform takes over from here — it
+               applies itself to the cleaned artwork (bgSrc). */
+            if (onDone) onDone(true);
+            else if (d.colorHex) applyRecolor(d);
+            /* A removed background changes the artwork the
+               inverted copy is made from — rebuild it too. */
+            else if (d.inverted) applyInvert(d);
             /* Follow-up question (owner, 2026-11-17): when some of
                the background color is still in the picture, say so
                and offer the shop's help — "We'll take care of it —
@@ -3476,6 +3657,7 @@
             if (seq !== d.procSeq) return;
             d.toolNote = "That file couldn’t be processed here — the original is unchanged.";
             render();
+            if (onDone) onDone(false);
           });
         }
         /* ---------- Garment-only color tint ----------
@@ -3564,6 +3746,7 @@
           lastArtSrc = null; /* force the stage picture back to the original */
           render();
           if (d.colorHex) applyRecolor(d);
+          else if (d.inverted) applyInvert(d);
         }
 
         /* Business info strip (Shop settings J): the shop's contact
@@ -3755,6 +3938,16 @@
             removeBgBtn.disabled = !!d.isVector;
             restoreBgBtn.hidden = false;
             restoreBgBtn.disabled = !d.bgRemoved;
+            /* Invert colors button: live only for a monochrome
+               logo with no picked Logo color (a multi-color logo
+               is never inverted, and a recolored one is already a
+               single chosen color). Its label flips to "Undo
+               invert" while this location's logo is inverted. */
+            if (invertBtn) {
+              invertBtn.hidden = false;
+              invertBtn.disabled = !!d.colorHex || !d.monoLogo;
+              invertBtn.textContent = d.inverted ? "Undo invert" : "Invert colors";
+            }
           } else {
             lastArtSrc = null;
             artFileName.textContent = "";
@@ -3766,6 +3959,7 @@
             removeBgBtn.disabled = true;
             restoreBgBtn.hidden = false;
             restoreBgBtn.disabled = true;
+            if (invertBtn) { invertBtn.hidden = false; invertBtn.disabled = true; invertBtn.textContent = "Invert colors"; }
           }
 
           /* dark-shirt hint: black artwork (not flipped white) on black/navy only —
@@ -4457,7 +4651,7 @@
             state.product === "apron" ? "Apron front pocket (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             p === "pocket" ? placementLabel(p) + " (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             (state.printSize === "standard" ? "Standard" : "Oversize") + " (up to " + a.maxW + "″ × " + a.maxH + "″)";
-          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
+          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (d.inverted && !d.colorHex ? ", logo colors INVERTED (black and white swapped by the customer so the logo shows on this shirt color)" : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
         }
         /* Exact uploaded logo file names ("Front: name.png", …) for
            the current design — used by the summary's file notes and
@@ -5304,6 +5498,99 @@
           );
         }
 
+        /* ---------- Invert colors offer (hard-to-see logos) ----------
+           When a placed logo's colors clash with the picked shirt
+           color — black parts of the logo on a dark shirt, or white
+           parts (a white circle that is part of the design) on a
+           light shirt — the design would barely show. The check
+           runs on the analysis facts (hasBlack / hasWhite /
+           monoLogo from countDistinctColorsInImage, swapped when
+           the logo is already inverted) against the shirt color's
+           luminance. A MONOCHROME (black-and-white) logo gets an
+           action prompt offering "Invert colors": one tap swaps
+           black and white (setInverted) — the design stays the
+           same, only readable. Nothing is ever inverted
+           automatically. A MULTI-COLOR logo is never inverted
+           (that would change every color it has); it gets a plain
+           warning instead, suggesting a different shirt color or
+           the single-color Logo color option. Shown once per
+           combination of logo version + shirt color + inverted
+           state (d.invertNoticeKey), so ordinary re-renders never
+           repeat it, but changing the shirt color — or undoing an
+           inversion — can prompt again. A logo with a picked Logo
+           color (colorHex) never prompts: the customer controls
+           that color directly in the Logo color panel. */
+        function invertNoticeKeyFor(d) {
+          return (d.bgSrc || d.src || "") + "|" + state.color + "|" + (d.inverted ? "1" : "0");
+        }
+        function logoClashKind(d) {
+          if (!d || !d.src || d.colorHex) return null;
+          if (d.colorAnalyzedSrc !== (d.bgSrc || d.src)) return null;
+          var rgb = hexToRgb(shirtEntry().hex);
+          if (!rgb) return null;
+          var lum = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+          var effBlack = d.inverted ? d.hasWhite : d.hasBlack;
+          var effWhite = d.inverted ? d.hasBlack : d.hasWhite;
+          if (effBlack && lum <= 80) return "black";
+          if (effWhite && lum >= 180) return "white";
+          return null;
+        }
+        function maybeShowInvertNotice() {
+          var monoLocs = [], multiLocs = [];
+          ["front", "back", "pocket"].forEach(function (p) {
+            if (!locEnabled(p)) return;
+            var d = state.designs[p];
+            if (!d || !logoClashKind(d)) return;
+            if (d.invertNoticeKey === invertNoticeKeyFor(d)) return;
+            d.invertNoticeKey = invertNoticeKeyFor(d);
+            (d.monoLogo ? monoLocs : multiLocs).push(p);
+          });
+          var shirtName = colorLabel();
+          if (monoLocs.length) {
+            /* When a listed logo's background is still on, the
+               offer below is only safe because tapping Invert runs
+               the background removal FIRST (see setInverted) — the
+               prompt says so, so the customer knows the swap will
+               touch the design only, never the background. */
+            var anyBgOn = monoLocs.some(function (p) { var dd = state.designs[p]; return dd && !dd.bgRemoved && !dd.isVector; });
+            var anyInverted = monoLocs.some(function (p) { return state.designs[p].inverted; });
+            var allInverted = monoLocs.every(function (p) { return state.designs[p].inverted; });
+            var items = monoLocs.map(function (p) {
+              var kind = logoClashKind(state.designs[p]);
+              return "<li>" + placementLabel(p) + " logo: its " + (kind === "black" ? "black" : "white") + " parts blend into the " + shirtName + " shirt.</li>";
+            }).join("");
+            showNotice(
+              "This logo will be hard to see",
+              "<p>On the " + shirtName + " shirt you picked, part of " + (monoLocs.length > 1 ? "these black-and-white logos" : "this black-and-white logo") + " blends right into the shirt:</p>" +
+              "<ul>" + items + "</ul>" +
+              (allInverted
+                ? "<p>These colors are already inverted. Swap black and white back and the logo returns to its original colors — or pick a different shirt color.</p>"
+                : "<p>Invert the colors and the design stays exactly the same — black and white just swap places, so it stands out on this shirt. Nothing changes unless you tap below." + (anyBgOn ? " If your logo’s background is still on, we’ll take it off first — only the design itself gets swapped." : "") + "</p>"),
+              [
+                { label: allInverted ? "Back to original colors" : "Invert colors", primary: true, onPick: function () {
+                    monoLocs.forEach(function (p) {
+                      var d = state.designs[p];
+                      if (d) setInverted(d, !d.inverted);
+                    });
+                  } },
+                { label: anyInverted ? "Keep them inverted" : "Keep my colors", onPick: null }
+              ]
+            );
+          }
+          if (multiLocs.length) {
+            var mItems = multiLocs.map(function (p) {
+              var kind = logoClashKind(state.designs[p]);
+              return "<li>" + placementLabel(p) + " logo: its " + (kind === "black" ? "dark" : "light") + " parts blend into the " + shirtName + " shirt.</li>";
+            }).join("");
+            showNotice(
+              "Heads up — this logo may be hard to see",
+              "<p>Part of " + (multiLocs.length > 1 ? "these logos is" : "this logo is") + " close to the " + shirtName + " shirt color, so it may not stand out once printed:</p>" +
+              "<ul>" + mItems + "</ul>" +
+              "<p>We can’t invert a multi-color logo — swapping black and white would change all of its colors. Two things that work: pick a different shirt color, or print the logo in a single color using the Logo color panel next to the shirt.</p>"
+            );
+          }
+        }
+
         /* ---------- Click-to-enlarge preview ----------
            Tapping or clicking the shirt view opens a full-screen
            overlay with the shirt shown large and the logo exactly
@@ -5544,6 +5831,9 @@
             }
             uploadError.classList.remove("show");
             render();
+            /* Switching products can also change the shirt color
+               (e.g. aprons reset to denim) — re-check the clash. */
+            maybeShowInvertNotice();
           });
         });
         /* Hat style (step 2): Mesh Trucker or Closed Trucker — swaps
@@ -5616,6 +5906,9 @@
             b.setAttribute("aria-pressed", b.getAttribute("data-color") === key ? "true" : "false");
           });
           render();
+          /* A new shirt color can make a placed logo hard to
+             see (or fix one that was) — re-check the clash. */
+          maybeShowInvertNotice();
         }
         function wireSwatch(btn) {
           btn.addEventListener("click", function () { selectShirtColor(btn.getAttribute("data-color")); });
@@ -5763,6 +6056,13 @@
         restoreBgBtn.addEventListener("click", function () {
           restoreBg(currentDesign());
         });
+        if (invertBtn) {
+          invertBtn.addEventListener("click", function () {
+            var d = currentDesign();
+            if (!d) return;
+            setInverted(d, !d.inverted);
+          });
+        }
         if (ownCheck) {
           ownCheck.addEventListener("change", function () {
             state.ownGarment = !!ownCheck.checked;
@@ -6168,6 +6468,8 @@
                 colorHex: null, colorSrc: null, bgSrc: null, bgRemoved: false, bgHelp: false,
                 bgTol: 60, processedW: 0, procSeq: 0, toolNote: "",
                 multiColor: false, colorCount: 0, colorAnalyzedSrc: "", colorSeq: 0, colorNoticeKey: "",
+                inverted: false, invSrc: null, invertNoticeKey: "", hasBlack: false, hasWhite: false, monoLogo: false,
+                inverted: false, invSrc: null, invertNoticeKey: "", hasBlack: false, hasWhite: false, monoLogo: false,
                 x: 0, y: 0, w: p === "pocket" ? 92 : 82
               };
               state.designs[p] = d;
@@ -7604,6 +7906,11 @@
           "One size — adjustable snapback. Hats print on the front panel only, and the minimum is 12 hats.": "Talla única — cierre ajustable tipo snapback. Los sombreros se imprimen solo en el panel frontal, y el mínimo es de 12 sombreros.",
           "About this item": "Acerca de este artículo",
           "Background removal": "Quitar el fondo", "Remove Background": "Quitar fondo", "Restore Background": "Restaurar fondo",
+          "Invert colors": "Invertir colores", "Undo invert": "Deshacer inversión",
+          "This logo will be hard to see": "Este logo será difícil de ver",
+          "Back to original colors": "Volver a los colores originales",
+          "Keep my colors": "Dejar mis colores", "Keep them inverted": "Dejarlos invertidos",
+          "Heads up — this logo may be hard to see": "Atención — este logo puede ser difícil de ver",
           "You’re good to go!": "¡Todo listo!",
           "Good news — this image already has no background. It’s already transparent, so there’s nothing to remove.": "Buenas noticias — esta imagen ya no tiene fondo. Ya es transparente, así que no hay nada que quitar.",
           "A quick note about colors": "Una nota rápida sobre los colores",
