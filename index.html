@@ -2936,11 +2936,11 @@
            recolor applied (bgSrc || src). A design whose Logo
            color is set (colorHex — any chip other than "Original",
            or the custom picker) counts as ONE color anyway:
-           applyRecolor() truly recolors the rendered artwork —
-           every visible pixel of displaySrc() becomes that single
-           color, keeping only the original transparency — so a
-           picked Logo color genuinely makes the printed artwork
-           one color, and no extra-color charge applies. */
+           applyRecolor() repaints the rendered artwork's ink in
+           that single color (white that is part of the design
+           itself stays white — see applyRecolor), so a picked
+           Logo color is priced as the one-color print it is
+           ordered as, and no extra-color charge applies. */
         function countDistinctColorsInImage(img) {
           try {
             var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
@@ -3078,9 +3078,9 @@
         }
         /* The color count a placed logo is charged on. A design
            whose Logo color is set (colorHex) counts as 1:
-           applyRecolor() has turned (or is turning) every
-           visible pixel of the rendered artwork into that one
-           color, so the printed artwork is one color and no
+           applyRecolor() has turned (or is turning) the rendered
+           artwork's ink into that one color (design white stays
+           white), so it is priced as a one-color print and no
            extra-color charge applies to it. */
         function logoColorCount(d) {
           if (!d || !d.src) return 0;
@@ -3147,8 +3147,35 @@
           ctx.drawImage(img, 0, 0, cw, ch);
           return { canvas: c, ctx: ctx, w: cw, h: ch };
         }
-        /* Recolor: every visible pixel becomes the chosen color, keeping the
-           original transparency — right for single-color logos. */
+        /* Recolor (owner fix, 2026-11-17): the logo's colors are
+           detected FIRST — the same countDistinctColorsInImage
+           analysis the color count uses — and only the INK (the
+           text and lines) is repainted in the chosen color.
+           White that is part of the design itself (a white circle
+           the lettering sits on, say) is NOT ink: those pixels
+           keep their white, so the design stays readable instead
+           of collapsing into one solid blob of the picked color.
+           The old version painted EVERY visible pixel, so the
+           Escuela Taqueria logo (red / yellow / blue lettering on
+           a white circle, already transparent, no background)
+           became a plain solid white disc when white was picked
+           and the lettering vanished. White that is only the
+           image's background never counts as design white (the
+           analysis's edge rule excludes it), so a logo whose
+           background is still on recolors exactly as before.
+           Design white is only kept when the logo has other
+           colors besides the white — a logo that is white alone
+           has no ink to protect, so picking a color still
+           repaints the whole thing. The result lands in
+           d.colorSrc, and the stage, the enlarged view and the
+           emailed design preview all read displaySrc(), so the
+           recolored logo shows the same everywhere. Picking a
+           color that matches the kept white gets a warning —
+           see maybeShowRecolorMatchNotice below. */
+        function isDesignWhitePixel(r, g, b) {
+          var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+          return mn >= 224 && mx - mn <= 32;
+        }
         function applyRecolor(d) {
           if (!d || !d.colorHex) return;
           var rgb = hexToRgb(d.colorHex);
@@ -3160,22 +3187,56 @@
             if (seq !== d.procSeq) return;
             var p = processCanvas(img);
             if (!p) { d.toolNote = "That file couldn’t be recolored here — the original is unchanged."; render(); return; }
+            var det = countDistinctColorsInImage(img);
+            var keepWhite = !!(det && det.hasWhite && det.count >= 2);
             var data = p.ctx.getImageData(0, 0, p.w, p.h);
             var px = data.data;
             for (var i = 0; i < px.length; i += 4) {
-              if (px[i + 3] > 0) { px[i] = rgb.r; px[i + 1] = rgb.g; px[i + 2] = rgb.b; }
+              if (px[i + 3] === 0) continue;
+              if (keepWhite && isDesignWhitePixel(px[i], px[i + 1], px[i + 2])) continue;
+              px[i] = rgb.r; px[i + 1] = rgb.g; px[i + 2] = rgb.b;
             }
             p.ctx.putImageData(data, 0, 0);
             d.colorSrc = p.canvas.toDataURL("image/png");
             d.processedW = p.w;
-            d.toolNote = "Logo color set to " + d.colorHex.toUpperCase() + ". Pick “Original colors” to undo.";
+            d.toolNote = "Logo color set to " + d.colorHex.toUpperCase() + "." + (keepWhite ? " The white parts of your design stay white." : "") + " Pick “Original colors” to undo.";
             render();
+            maybeShowRecolorMatchNotice(d, keepWhite);
           }).catch(function () {
             if (seq !== d.procSeq) return;
             d.colorSrc = null;
             d.toolNote = "That file couldn’t be recolored here — the original is unchanged.";
             render();
           });
+        }
+        /* ---------- Recolor match warning (owner, 2026-11-17) ----------
+           When a recolor keeps the logo's own design white (see
+           applyRecolor) and the color the customer picked matches
+           that kept white, the repainted ink turns white too —
+           white lettering on the logo's white parts blends in and
+           disappears, exactly the Escuela Taqueria case (white
+           picked on a logo whose circle is white). Warn once per
+           logo version + picked color (d.recolorWarnKey), through
+           the shared notice card, the moment the recolor lands.
+           Informational only: the recolor still applies, prices
+           and the send / checkout flow are untouched, and "Got
+           it" (or a dismiss) leaves the customer's pick as is. */
+        function maybeShowRecolorMatchNotice(d, keepWhite) {
+          if (!d || !keepWhite || !d.colorHex) return;
+          var rgb = hexToRgb(d.colorHex);
+          if (!rgb) return;
+          /* Only a near-white pick can swallow the design this
+             way — it has to match the white that stays. */
+          if (!(rgb.r >= 224 && rgb.g >= 224 && rgb.b >= 224)) return;
+          var key = (d.bgSrc || d.src || "") + "|" + d.colorHex;
+          if (d.recolorWarnKey === key) return;
+          d.recolorWarnKey = key;
+          showNotice(
+            "Careful — your logo already has white in it",
+            "<p>Part of this logo is white by design — like a white circle or panel — and those white parts stay white when we recolor.</p>" +
+            "<p>You picked white, so the rest of the design turns white too — and white on white blends in. The lettering on the white parts may disappear.</p>" +
+            "<p>Pick a different color in the Logo color panel if you want the whole design to stand out — or keep white if that’s the look you want.</p>"
+          );
         }
         /* Invert colors and the Logo color recolor transform
            EVERY visible pixel of the artwork they process
@@ -5493,7 +5554,7 @@
           actions.push({ label: "Cancel — keep all my colors", onPick: null });
           showNotice(
             "Pick your one color",
-            "<p>Your logo will be recolored to the single color you pick — the whole logo prints in that one color, and the extra-color charge comes off your price.</p>",
+            "<p>Your logo will be recolored to the single color you pick — the design prints in that one color (white parts that are part of the design itself stay white), and the extra-color charge comes off your price.</p>",
             actions
           );
         }
@@ -7928,7 +7989,11 @@
           "Yes — pick one color": "Sí — elegir un color",
           "Keep all my colors": "Dejar todos mis colores",
           "Pick your one color": "Elige tu color",
-          "Your logo will be recolored to the single color you pick — the whole logo prints in that one color, and the extra-color charge comes off your price.": "Tu logo se cambiará al único color que elijas — todo el logo se imprime en ese solo color, y el cargo por colores extra sale de tu precio.",
+          "Your logo will be recolored to the single color you pick — the design prints in that one color (white parts that are part of the design itself stay white), and the extra-color charge comes off your price.": "Tu logo se cambiará al único color que elijas — el diseño se imprime en ese solo color (las partes blancas que son parte del diseño se quedan blancas), y el cargo por colores extra sale de tu precio.",
+          "Careful — your logo already has white in it": "Cuidado — tu logo ya tiene blanco",
+          "Part of this logo is white by design — like a white circle or panel — and those white parts stay white when we recolor.": "Parte de este logo es blanca por diseño — como un círculo o panel blanco — y esas partes blancas se quedan blancas cuando cambiamos el color.",
+          "You picked white, so the rest of the design turns white too — and white on white blends in. The lettering on the white parts may disappear.": "Elegiste blanco, así que el resto del diseño también se vuelve blanco — y blanco sobre blanco se confunde. Las letras sobre las partes blancas pueden desaparecer.",
+          "Pick a different color in the Logo color panel if you want the whole design to stand out — or keep white if that’s the look you want.": "Elige otro color en el panel Color del logo si quieres que todo el diseño se distinga — o deja el blanco si ese es el estilo que quieres.",
           "Cancel — keep all my colors": "Cancelar — dejar todos mis colores",
           "A logo is required — blank items can’t be quoted. Upload your artwork with the Upload button on the shirt, then tap GO TO CHECKOUT again.": "Se requiere un logo — los artículos en blanco no se pueden cotizar. Sube tu diseño con el botón Subir en la camiseta y luego toca IR A PAGAR de nuevo.",
           "Please tick both boxes in step 7 (Confirm your order) before sending your quote.": "Marca las dos casillas en el paso 7 (Confirma tu pedido) antes de enviar tu cotización.",
