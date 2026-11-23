@@ -5111,6 +5111,12 @@
         function designSummaryLine(p) {
           var d = state.designs[p];
           if (!d) return null;
+          /* The picked single Logo color reads as a NAME + hex
+             ("Black #111111"), not a bare hex code, so the owner
+             can see the color choice in the emailed quote at a
+             glance without looking the code up. */
+          var pickRgb = d.colorHex ? hexToRgb(d.colorHex) : null;
+          var pickName = pickRgb ? colorNameFor(pickRgb.r, pickRgb.g, pickRgb.b) : "";
           var a = areaFor(p, state.printSize);
           var wIn = (d.w / 100) * a.maxW;
           var hIn = wIn / d.aspect;
@@ -5118,7 +5124,7 @@
             state.product === "apron" ? "Apron front pocket (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             p === "pocket" ? placementLabel(p) + " (up to " + a.maxW + "″ × " + a.maxH + "″)" :
             (state.printSize === "standard" ? "Standard" : "Oversize") + " (up to " + a.maxW + "″ × " + a.maxH + "″)";
-          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + d.colorHex.toUpperCase() : "") + (perColorSummaryText(d) ? ", " + perColorSummaryText(d) : "") + (d.inverted && !d.colorHex ? ", logo colors INVERTED (black and white swapped by the customer so the logo shows on this shirt color)" : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
+          return placementLabel(p) + ": " + d.name + " — prints ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″, " + sizeName + (d.white && !d.colorHex ? ", shown in white ink" : "") + (d.colorHex ? ", logo color set to " + (pickName ? pickName + " " : "") + d.colorHex.toUpperCase() : "") + (perColorSummaryText(d) ? ", " + perColorSummaryText(d) : "") + (d.inverted && !d.colorHex ? ", logo colors INVERTED (black and white swapped by the customer so the logo shows on this shirt color)" : "") + (d.bgRemoved ? ", background removed in the preview" : "") + (d.bgHelp ? " — NOTE FOR THE SHOP: the customer says the background did not fully come off this logo — please finish removing it by hand" : "") + colorSummarySuffix(d);
         }
         /* Exact uploaded logo file names ("Front: name.png", …) for
            the current design — used by the summary's file notes and
@@ -5158,11 +5164,134 @@
           lines.push(title);
           lines.push("----------------------------------------------------");
         }
+        /* ---------- Order at a glance (owner, 2026-11-19) ----------
+           The owner asked for the email they receive to carry the
+           important order information up front, easy to spot at a
+           glance, so the order can be made without opening the
+           designer. buildSummary() therefore opens — right under
+           its title — with this KEY ORDER DETAILS block: the
+           product, the garment color, the print method and print
+           size, the print locations with their print sizes, the
+           logo color choices for each location (the picked single
+           color by name + hex, any per-color changes, whether the
+           logo colors were inverted, or the original colors), the
+           quantities by size, the own-garment choice and the
+           details typed for it, the rush date when there is one,
+           the customer's name / company / project / email / phone,
+           the shipping address and method, and the total with its
+           breakdown. The garment color line is wrapped in
+           >>> … <<< markers so it jumps out of the plain-text
+           email; on screen the summary renderer paints the block's
+           values green like the rest of the summary (see
+           highlightedSummaryHtml). The block only REPEATS what the
+           detailed sections below already state — no price, total
+           or wording anywhere else changes, and the quote send and
+           the Wix checkout flow read the same state they always
+           did. */
+        function glanceLogoColorText(p) {
+          var d = state.designs[p];
+          if (!d) return null;
+          var bits = [];
+          if (d.colorHex) {
+            var rgb = hexToRgb(d.colorHex);
+            var nm = rgb ? colorNameFor(rgb.r, rgb.g, rgb.b) : "";
+            bits.push("single color picked: " + (nm ? nm + " " : "") + d.colorHex.toUpperCase());
+          } else if (hasPerColorChanges(d)) {
+            bits.push(perColorSummaryText(d));
+          } else if (d.inverted) {
+            bits.push("logo colors INVERTED (black and white swapped)");
+          } else {
+            var cnt = logoColorCount(d);
+            bits.push("original colors as uploaded" + (cnt ? " (" + cnt + (cnt === 1 ? " color" : " colors") + ")" : ""));
+          }
+          if (d.white && !d.colorHex) bits.push("shown in white ink");
+          if (d.bgRemoved) bits.push("background removed");
+          if (d.bgHelp) bits.push("NOTE FOR THE SHOP: background did not fully come off — please finish removing it by hand");
+          return placementLabel(p) + " — " + bits.join(", ");
+        }
+        function orderAtGlanceLines() {
+          var out = [];
+          out.push("====================================================");
+          out.push("KEY ORDER DETAILS — AT A GLANCE");
+          out.push("====================================================");
+          out.push("Product: " + currentProduct().label);
+          if (state.product === "hat") out.push("Hat style: " + (hatStyleKey() === "closed" ? "Closed Trucker (solid front/back)" : "Mesh Trucker (mesh back)"));
+          out.push(">>> Garment color: " + shirtEntry().label + " <<<");
+          out.push("Print method: " + METHOD_LABEL[state.method]);
+          var aF = areaFor("front", state.printSize);
+          var psTxt = state.product === "hat" ? "Hat front panel (up to " + aF.maxW + "″ × " + aF.maxH + "″)"
+            : state.product === "apron" ? "Apron front pocket (up to " + aF.maxW + "″ × " + aF.maxH + "″)"
+            : (state.printSize === "standard" ? "Standard" : "Oversize") + " (up to " + aF.maxW + "″ × " + aF.maxH + "″)";
+          var hasPocketArt = false;
+          ["front", "back", "pocket"].forEach(function (p) { if (p === "pocket" && locEnabled(p) && state.designs[p]) hasPocketArt = true; });
+          if (hasPocketArt && state.product !== "hat" && state.product !== "apron") {
+            var aP = areaFor("pocket", state.printSize);
+            psTxt += " · " + placementLabel("pocket") + " " + aP.maxW + "″ × " + aP.maxH + "″";
+          }
+          out.push("Print size: " + psTxt);
+          var locBits = [];
+          var logoBits = [];
+          ["front", "back", "pocket"].forEach(function (p) {
+            if (!locEnabled(p)) return;
+            var d = state.designs[p];
+            if (!d) return;
+            var a = areaFor(p, state.printSize);
+            var wIn = (d.w / 100) * a.maxW;
+            var hIn = d.aspect ? wIn / d.aspect : 0;
+            locBits.push(placementLabel(p) + " ≈ " + fmt(wIn) + "″ × " + fmt(hIn) + "″");
+            var lc = glanceLogoColorText(p);
+            if (lc) logoBits.push(lc);
+          });
+          out.push("Print locations: " + (locBits.length ? locBits.join(" · ") : "none placed yet"));
+          out.push("Logo colors: " + (logoBits.length ? logoBits.join(" · ") : "none placed yet"));
+          var qParts = [];
+          activeSizeKeys().forEach(function (k) { if (state.sizes[k] > 0) qParts.push(k + " × " + state.sizes[k]); });
+          out.push((currentProduct().oneSize ? "Quantity: " : "Quantities: ") + (qParts.length ? qParts.join(", ") + " — " + totalQty() + " total" : "none entered yet"));
+          var ownDetG = (state.ownGarmentDetails || "").trim();
+          if (state.ownGarment) {
+            out.push("Own garment: YES — customer brings their own garment, PRINTING ONLY (no garment charge)");
+            out.push("Own-garment details: " + (ownDetG ? ownDetG.replace(/\s*\n\s*/g, " ") : "not entered yet"));
+          } else {
+            out.push("Own garment: No — One Graphics supplies the " + currentProduct().item);
+          }
+          if (state.rushWanted && rushSettings.enabled) {
+            out.push("Rush: YES — needed by " + (rushDateValid() ? state.rushDate : rushDateTooSoon() ? "RUSH DATE MUST BE AT LEAST A WEEK OUT — 7 days from today or later" : "RUSH DATE REQUIRED — not picked yet"));
+          } else {
+            out.push("Rush: No");
+          }
+          out.push("Customer: " + ((state.custName || "").trim() ? state.custName.trim() : "not provided yet"));
+          if ((state.custCompany || "").trim()) out.push("Company: " + state.custCompany.trim());
+          if ((state.custProject || "").trim()) out.push("Project: " + state.custProject.trim());
+          out.push("Email: " + (effectiveCustomerEmail() ? effectiveCustomerEmail() : "not provided yet"));
+          out.push("Phone: " + ((state.custPhone || "").trim() ? state.custPhone.trim() : "not provided yet"));
+          var shipPartsG = [state.custStreet, state.custCity, state.custState, state.custZip].map(function (v) { return (v || "").trim(); }).filter(function (v) { return v; });
+          out.push("Ship to: " + (shipPartsG.length === 4
+            ? state.custStreet.trim() + ", " + state.custCity.trim() + ", " + state.custState.trim() + " " + state.custZip.trim()
+            : "not provided yet"));
+          out.push("Shipping method: " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")");
+          var rG = computePrice();
+          if (!rG.complete) {
+            out.push("Price: to be quoted — see the Pricing section below.");
+          } else if (rG.qty < effectiveMinQty()) {
+            out.push("Price per item: " + money(rG.perShirt) + " — below the " + effectiveMinQty() + "-item minimum, so no order total yet (see Pricing below).");
+          } else {
+            out.push("TOTAL: " + money(rG.total) + " — " + money(rG.perShirt) + " per item × " + rG.qty + " items"
+              + (rG.setup > 0 ? " + " + money(rG.setup) + " setup fee" : "")
+              + (rG.rushFlat > 0 ? " + " + money(rG.rushFlat) + " rush fee" : "")
+              + "; subtotal before tax " + money(rG.subtotalBeforeTax)
+              + ", tax (9.5%) " + money(rG.taxAmount)
+              + ", estimated shipping " + (rG.shipEst != null ? money(rG.shipEst) : "not calculated yet"));
+          }
+          out.push("====================================================");
+          return out;
+        }
         function buildSummary() {
           var lines = [];
           var logoFileNames = uploadedLogoNames();
-          lines.push("ONE GRAPHICS — " + currentProduct().label.toUpperCase() + " DESIGN (PROTOTYPE)");
+          lines.push("ONE GRAPHICS DESIGN - CUSTOM T-SHIRTS");
           lines.push("Quote request — full details below, section by section.");
+          lines.push("");
+          lines = lines.concat(orderAtGlanceLines());
           lines.push("");
           lines = lines.concat(attachReminderLines(logoFileNames));
           sectionHead(lines, "CUSTOMER");
@@ -5569,7 +5698,14 @@
             "Shipping address", "Shipping method", "Garment source",
             "Color", "Preview view", "Print method",
             "Uploaded logo file", "Customer comment about the logo",
-            "Sizes", "Quantity", "Total quantity"
+            "Sizes", "Quantity", "Total quantity",
+            /* The KEY ORDER DETAILS block at the top of the summary
+               (see orderAtGlanceLines): its short labels get the
+               same green treatment, so the at-a-glance values stand
+               out on screen exactly like the detailed sections. */
+            "Print size", "Print locations", "Logo colors", "Quantities",
+            "Own garment", "Own-garment details", "Rush",
+            "Customer", "Company", "Project", "Email", "Phone", "Ship to", "TOTAL"
           ];
           var lines = buildSummary().split("\n");
           var section = "";
@@ -5581,6 +5717,21 @@
             if (idx > 0 && /^-+$/.test(lines[idx - 1]) && /^-+$/.test(lines[idx + 1] || "")) {
               section = line;
               return esc;
+            }
+            /* At-a-glance block title: bold green so the block is
+               easy to spot at the top of the scrolling summary. */
+            if (line === "KEY ORDER DETAILS — AT A GLANCE") {
+              return '<span class="hl">' + esc + "</span>";
+            }
+            /* Garment color in the at-a-glance block: the >>>
+               markers stay plain and the color name itself goes
+               green, so the single most-asked detail stands out
+               on screen the same way the markers make it stand
+               out in the plain-text email. */
+            if (line.indexOf(">>> Garment color: ") === 0) {
+              var gVal = line.slice(">>> Garment color: ".length).replace(/ <<<$/, "");
+              if (isPlaceholder(gVal)) return esc;
+              return escapeSummaryHtml(">>> Garment color: ") + hl(gVal) + escapeSummaryHtml(" <<<");
             }
             /* Header: the product named in the title is the item
                the customer picked — green; the rest stays normal. */
