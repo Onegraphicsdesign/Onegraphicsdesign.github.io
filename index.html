@@ -764,8 +764,8 @@
          only. Every value the customer chose or entered (print
          method, item, print locations, color, print size,
          quantities, own-garment choice and details, rush date,
-         name, company, email, phone number, shipping address,
-         shipping method, payment-link preference) plus every price
+         name, company, email, phone number, shipping address)
+         plus every price
          is wrapped in .hl spans by the summary renderer so it
          stands out inside the scrolling square. The plain-text
          summary sent by email (Forminit) is built separately by
@@ -1945,13 +1945,13 @@
             <div class="detected-box" id="detectedLocations" aria-live="polite" style="margin-top:0"></div>
             <p class="seg-note" id="comboHint"></p>
             <div class="price-box" id="priceBox" aria-live="polite"></div>
-            <p class="price-note">Your total above includes 9.5% Los Angeles tax plus estimated shipping, worked out from your order&rsquo;s total weight and the shipping method you pick in step 5. Estimated shipping included in total above — final shipping is confirmed by the owner. When you are ready, send your design summary in step 8 to place your order. If you&rsquo;re providing your own garment (step 4), you only pay for the printing — there&rsquo;s no garment charge.</p>
+            <p class="price-note">Your total above includes 9.5% Los Angeles tax. Shipping: calculated at Wix checkout based on order weight. When you are ready, send your design summary in step 8 to place your order. If you&rsquo;re providing your own garment (step 4), you only pay for the printing — there&rsquo;s no garment charge.</p>
             <p class="price-note" id="orderNotesDisplay" hidden style="font-weight:600; color:var(--ink);"></p>
           </section>
 
           <section id="sec-info" data-step-sec="5" aria-labelledby="h-info">
             <h2 id="h-info"><span class="step">5</span>Your information</h2>
-            <p class="step-hint">Tell us who you are and where to ship your order, and pick your shipping method. Everything here is required before GO TO CHECKOUT unlocks in step 8.</p>
+            <p class="step-hint">Tell us who you are and where to ship your order. You pick your delivery speed and pay for shipping at Wix checkout. Everything here is required before GO TO CHECKOUT unlocks in step 8.</p>
             <div class="info-field">
               <label for="custName">Full name *</label>
               <input type="text" id="custName" placeholder="Your full name" autocomplete="name" required aria-required="true" />
@@ -1994,14 +1994,7 @@
                 <input type="text" id="custZip" placeholder="ZIP" inputmode="numeric" autocomplete="postal-code" required aria-required="true" />
               </div>
             </div>
-            <p class="paylink-q" id="shipMethodQ">Shipping method *</p>
-            <div class="seg ship-seg" role="group" aria-labelledby="shipMethodQ" id="shipMethodSeg">
-              <button type="button" data-ship="standard" aria-pressed="true">Standard Ground <span class="ship-days">4–8 business days</span></button>
-              <button type="button" data-ship="priority" aria-pressed="false">Priority Mail <span class="ship-days">3–5 business days</span></button>
-              <button type="button" data-ship="express" aria-pressed="false">Priority Mail Express <span class="ship-days">2–3 business days</span></button>
-            </div>
-            <p class="ship-est" id="shipEstLine" aria-live="polite"></p>
-            <p class="seg-note">Estimated shipping is worked out from your order&rsquo;s total weight and added to your quote total — it is an estimate only, and final shipping is confirmed by the owner.</p>
+            <p class="seg-note">Shipping: calculated at Wix checkout based on order weight — you pick your delivery speed there.</p>
             <p class="info-status wait" id="custInfoStatus" aria-live="polite">Please fill in every field above — GO TO CHECKOUT in step 8 stays locked until your information is complete.</p>
           </section>
 
@@ -2194,9 +2187,9 @@
         };
         /* Estimated garment weights (owner-approved estimates, in
            ounces per item). The total order weight is shown in the
-           price area and in the design summary, and it also drives
-           the estimated shipping price (see SHIP_METHODS below) —
-           the estimate table the owner set, by total weight. */
+           price area and in the design summary, and it is sent to
+           the pay-link Worker with the order (as weightLb, pounds)
+           so Wix charges the shipping at checkout from the weight. */
         /* Product catalog for the Product Manager (Shop settings,
            section G). The original five are built in: they can be
            hidden from the picker but not removed, so their photos,
@@ -2755,7 +2748,6 @@
           custCity: "",
           custState: "",
           custZip: "",
-          shipMethod: "standard",
           method: "screen",
           rushWanted: false,
           rushDate: "",
@@ -2786,9 +2778,9 @@
            and Embroidery have their own per-location prices in
            methodFees below (owner prices, 2026-11-05). Oversize
            costs the same as Standard.
-           Estimated shipping IS in the prototype total — worked
-           out from the total order weight and the shipping method
-           picked in step 5 (see SHIP_METHODS), added after tax. */
+           Shipping is NOT in the prototype total — Wix charges
+           it at checkout, worked out from the total order weight
+           this page sends to the pay-link Worker (weightLb). */
         var TAX_RATE = 0.095; /* 9.5% — Los Angeles, CA */
         var pricing = {
           minQty: 24,
@@ -2969,8 +2961,7 @@
         var custStateEl = document.getElementById("custState");
         var custZipEl = document.getElementById("custZip");
         var custInfoStatusEl = document.getElementById("custInfoStatus");
-        var shipMethodSegEl = document.getElementById("shipMethodSeg");
-        var shipEstLineEl = document.getElementById("shipEstLine");
+
         var ownShipNoteEl = document.getElementById("ownShipNote");
         var ownStatus = document.getElementById("ownStatus");
         var agreeCheck = document.getElementById("agreeCheck");
@@ -4828,35 +4819,11 @@
           if (lb === 0) return oz + " oz";
           return rem === 0 ? lb + " lb" : lb + " lb " + rem + " oz";
         }
-        /* Estimated shipping (owner's estimate table, 2026-11-06 —
-           ESTIMATES only, the owner will adjust them later if
-           needed). Standard Ground is priced by the total order
-           weight; Priority Mail is Standard Ground + $5.00 and
-           Priority Mail Express is Standard Ground + $12.00. The
-           method is picked in step 5 and defaults to Standard
-           Ground. Estimated shipping is added to the quote total
-           AFTER tax — shipping itself is never taxed. */
-        var SHIP_METHODS = {
-          standard: { label: "Standard Ground", days: "4–8 business days", add: 0 },
-          priority: { label: "Priority Mail", days: "3–5 business days", add: 5 },
-          express: { label: "Priority Mail Express", days: "2–3 business days", add: 12 }
-        };
-        function shipMethodInfo() { return SHIP_METHODS[state.shipMethod] || SHIP_METHODS.standard; }
-        function standardGroundEstimate(totalOz) {
-          var lb = totalOz / 16;
-          if (lb <= 1) return 6.50;
-          if (lb <= 5) return 9.50;
-          if (lb <= 10) return 13.50;
-          if (lb <= 20) return 18.50;
-          if (lb <= 30) return 24.00;
-          if (lb <= 50) return 32.00;
-          return 42.00 + 0.50 * Math.ceil(lb - 50);
-        }
-        function estimatedShipping() {
-          var oz = totalWeightOz();
-          if (oz == null || totalQty() <= 0) return null;
-          return standardGroundEstimate(oz) + shipMethodInfo().add;
-        }
+        /* Shipping moved to Wix (2026-11-23): the designer no
+           longer estimates shipping or adds it to the total. The
+           total order weight (totalWeightOz above) is sent to the
+           pay-link Worker as weightLb, and Wix charges the
+           shipping at checkout from that weight. */
         function activeSizeKeys() {
           var prod = currentProduct();
           if (prod.sizesList) return prod.sizesList.slice();
@@ -4899,7 +4866,7 @@
               var priced = computePrice();
               minSuccess.innerHTML = "<strong>✓ Minimum met — " + t + " " + prod.plural.toLowerCase() + ".</strong> " +
                 (priced.complete
-                  ? "Your order total is " + money(priced.total) + " incl. tax and estimated shipping — see “Your price” below. " +
+                  ? "Your order total is " + money(priced.total) + " incl. tax — shipping is calculated at Wix checkout. See “Your price” below. " +
                     (priced.combo && priced.combo.assumed
                       ? "No print fee is included yet — print fees are charged only for locations where you place artwork with the Upload button on the shirt. "
                       : "")
@@ -4971,7 +4938,7 @@
            exactly the auto-detected combo above. Before any artwork
            is placed the priced combo is EMPTY (no locations), so no
            print fee is charged at all — the price is the garment
-           plus setup, tax and shipping only, and each location's
+           plus setup and tax only, and each location's
            print fee appears the moment artwork is placed on it.
            `assumed` marks that no-artwork case so every label can
            say no print fee is included yet. */
@@ -5064,21 +5031,18 @@
              are $20), otherwise the standard $40. */
           var setup = ap.setupFee != null ? ap.setupFee : (pricing.setupFee || 0);
           /* Tax (9.5% Los Angeles, CA) applies to the discounted item
-             subtotal plus setup and rush, before shipping. Estimated
-             shipping is NOT taxed — it is added after tax, and
-             `total` is the full total the customer sees: items +
-             setup + rush + tax + estimated shipping. */
+             subtotal plus setup and rush. Shipping is NOT in the
+             total — Wix charges it at checkout from the order
+             weight — so `total` is items + setup + rush + tax. */
           var subtotalBeforeTax = qty > 0 ? perShirt * qty + setup + rushFlat : 0;
           var taxAmount = subtotalBeforeTax * TAX_RATE;
-          var shipEst = qty > 0 ? estimatedShipping() : null;
           return { complete: true, qty: qty, combo: combo, ownGarment: !!state.ownGarment,
             base: effectiveBase, fees: fees, feeUsed: feeUsed, extraColorTotal: extraColorTotal, colorChargeUsed: colorChargeUsed, perBefore: perBefore,
             tier: tier, disc: disc, perShirt: perShirt, setup: setup,
             upTotal: upTotal, upAvg: upAvg, upDetails: upDetails,
             rushPerItem: rushPerItem, rushFlat: rushFlat, rushFeeSet: rushFeeSet,
             subtotalBeforeTax: subtotalBeforeTax, taxRate: TAX_RATE, taxAmount: taxAmount,
-            shipEst: shipEst,
-            total: qty > 0 ? subtotalBeforeTax + taxAmount + (shipEst || 0) : 0 };
+            total: qty > 0 ? subtotalBeforeTax + taxAmount : 0 };
         }
         function row(label, val) {
           return '<div class="row"><span>' + label + '</span><span>' + val + "</span></div>";
@@ -5159,17 +5123,13 @@
             html += '<p class="price-note">Rush: you asked for rush, but no rush fee is included in this total — the shop will work out the rush fee with you.</p>';
           }
           if (r.qty < effectiveMinQty()) {
-            if (r.shipEst != null) {
-              html += row("Estimated shipping — " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")", money(r.shipEst));
-            }
             html += row("Order total", "Below the " + effectiveMinQty() + "-item minimum");
             html += '<p class="price-note">That price per item is ' + (r.ownGarment ? "printing only — you’re providing the garment, so there’s no garment charge — from" : r.combo.locs.length ? "item + printing added together from" : "the item only — no artwork placed yet, so no print fee — from") + ' the shop. Add ' + (effectiveMinQty() - r.qty) + " more item" + (effectiveMinQty() - r.qty === 1 ? "" : "s") + " in step 3 to reach the minimum and see the full order total.</p>";
           } else {
             html += row("Subtotal before tax", money(r.subtotalBeforeTax));
             html += row("Tax (9.5% — Los Angeles, CA)", money(r.taxAmount));
-            html += row("Estimated shipping — " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")", r.shipEst != null ? money(r.shipEst) : "—");
-            html += row("Total for " + r.qty + " " + (r.qty === 1 ? currentProduct().item : currentProduct().plural.toLowerCase()) + " (incl. tax + estimated shipping)", money(r.total));
-            html += '<p class="price-note" style="margin-top:6px;">Total = ' + money(r.perShirt) + " per item × " + r.qty + " items" + (r.setup > 0 ? " + " + money(r.setup) + " setup fee" : "") + (r.rushFlat > 0 ? " + " + money(r.rushFlat) + " rush fee" : "") + ", plus 9.5% Los Angeles tax" + (r.shipEst != null ? ", plus estimated shipping of " + money(r.shipEst) + " (" + shipMethodInfo().label + ", based on your order&rsquo;s weight)" : "") + ".<br />Estimated shipping included in total above — final shipping is confirmed by the owner. Your Wix Pay Link is created for this exact total with shipping already included, so Wix shipping is not added again on top.</p>";
+            html += row("Total for " + r.qty + " " + (r.qty === 1 ? currentProduct().item : currentProduct().plural.toLowerCase()) + " (incl. tax)", money(r.total));
+            html += '<p class="price-note" style="margin-top:6px;">Total = ' + money(r.perShirt) + " per item × " + r.qty + " items" + (r.setup > 0 ? " + " + money(r.setup) + " setup fee" : "") + (r.rushFlat > 0 ? " + " + money(r.rushFlat) + " rush fee" : "") + ", plus 9.5% Los Angeles tax.<br />Shipping: calculated at Wix checkout based on order weight.</p>";
           }
           priceBox.innerHTML = html;
         }
@@ -5244,7 +5204,7 @@
            quantities by size, the own-garment choice and the
            details typed for it, the rush date when there is one,
            the customer's name / company / project / email / phone,
-           the shipping address and method, and the total with its
+           the shipping address, and the total with its
            breakdown. The garment color line is wrapped in
            >>> … <<< markers so it jumps out of the plain-text
            email; on screen the summary renderer paints the block's
@@ -5334,7 +5294,6 @@
           out.push("Ship to: " + (shipPartsG.length === 4
             ? state.custStreet.trim() + ", " + state.custCity.trim() + ", " + state.custState.trim() + " " + state.custZip.trim()
             : "not provided yet"));
-          out.push("Shipping method: " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")");
           var rG = computePrice();
           if (!rG.complete) {
             out.push("Price: to be quoted — see the Pricing section below.");
@@ -5346,7 +5305,7 @@
               + (rG.rushFlat > 0 ? " + " + money(rG.rushFlat) + " rush fee" : "")
               + "; subtotal before tax " + money(rG.subtotalBeforeTax)
               + ", tax (9.5%) " + money(rG.taxAmount)
-              + ", estimated shipping " + (rG.shipEst != null ? money(rG.shipEst) : "not calculated yet"));
+              + "; shipping calculated at Wix checkout based on order weight");
           }
           out.push("====================================================");
           return out;
@@ -5370,7 +5329,6 @@
           lines.push("Shipping address: " + (shipParts.length === 4
             ? state.custStreet.trim() + ", " + state.custCity.trim() + ", " + state.custState.trim() + " " + state.custZip.trim()
             : "not provided yet"));
-          lines.push("Shipping method: " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")");
           sectionHead(lines, "PRODUCT");
           lines.push("Product: " + currentProduct().label + (isManaged(state.product)
             ? (MANAGED_PRODUCTS[state.product].front || MANAGED_PRODUCTS[state.product].back ? " (your photo)" : " (placeholder preview — no photo added yet)")
@@ -5462,21 +5420,18 @@
             }
             if (r.qty < effectiveMinQty()) {
               lines.push("Price per item: " + money(r.perShirt) + " — order is below the " + effectiveMinQty() + "-item minimum, so no order total yet.");
-              lines.push("Shipping method: " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")");
-              if (r.shipEst != null) lines.push("Estimated shipping: " + money(r.shipEst) + " — added to the total once the minimum is met.");
+              lines.push("Shipping: calculated at Wix checkout based on order weight");
             } else {
               lines.push("Price per item: " + money(r.perShirt) + (r.disc > 0 ? " (includes " + r.disc + "% volume discount)" : ""));
               if (r.disc > 0) lines.push("Volume discount: " + r.disc + "% — already included in the price per item above");
               if (r.setup > 0) lines.push("Setup fee: " + money(r.setup) + " — included in the subtotal below");
               lines.push("Subtotal before tax: " + money(r.subtotalBeforeTax) + (r.setup > 0 ? " (includes " + money(r.setup) + " setup fee" : "") + (r.rushFlat > 0 ? " and " + money(r.rushFlat) + " rush fee" : "") + (r.setup > 0 || r.rushFlat > 0 ? ")" : ""));
               lines.push("Tax (9.5% — Los Angeles, CA): " + money(r.taxAmount));
-              lines.push("Shipping method: " + shipMethodInfo().label + " (" + shipMethodInfo().days + ")");
-              lines.push("Estimated shipping: " + (r.shipEst != null ? money(r.shipEst) : "not calculated yet") + " (estimate, based on the total order weight above — shipping is not taxed)");
               lines.push("====================================================");
-              lines.push("TOTAL (includes tax + estimated shipping): " + money(r.total));
+              lines.push("TOTAL (includes tax): " + money(r.total));
               lines.push("====================================================");
-              lines.push("Estimated shipping included in total above — final shipping is confirmed by the owner.");
-              lines.push("Wix Pay Link note: create the Pay Link for this exact total with shipping already included — do not add Wix shipping again on top.");
+              lines.push("Shipping: calculated at Wix checkout based on order weight");
+              lines.push("Wix Pay Link note: create the Pay Link for this exact total — Wix adds shipping at checkout from the order weight sent with the link (weightLb).");
             }
           }
           sectionHead(lines, "CONFIRMATION");
@@ -5641,21 +5596,9 @@
             custEmailEl.value = effectiveCustomerEmail();
           }
           if (custEmailEl) custEmailEl.setAttribute("aria-invalid", emailOk || !effectiveCustomerEmail() ? "false" : "true");
-          /* Step 5 shipping method: keep the three choices in sync
-             with state and show the live estimated shipping price
-             for the picked method, from the total order weight. */
-          if (shipMethodSegEl) {
-            shipMethodSegEl.querySelectorAll("[data-ship]").forEach(function (b) {
-              b.setAttribute("aria-pressed", b.getAttribute("data-ship") === state.shipMethod ? "true" : "false");
-            });
-          }
-          if (shipEstLineEl) {
-            var shipEstNow = estimatedShipping();
-            var shipTotOz = totalWeightOz();
-            shipEstLineEl.textContent = shipEstNow != null
-              ? "Estimated shipping — " + shipMethodInfo().label + ": " + money(shipEstNow) + " (order weight " + formatWeight(shipTotOz) + "). It is included in your quote total."
-              : "Your estimated shipping appears here once quantities are added in step 3 — it is based on your order's total weight.";
-          }
+          /* Shipping is no longer picked in step 5: Wix charges it
+             at checkout from the order weight sent with the pay
+             link (weightLb), so there is nothing to sync here. */
           if (custInfoStatusEl) {
             if (infoOk) {
               custInfoStatusEl.textContent = "✓ Got it — your information is complete.";
@@ -5730,10 +5673,9 @@
            the print sizes, the sizes and quantities, the
            own-garment choice and the details typed for it, the rush
            choice and date, and the customer's name, company, email,
-           phone number, shipping address, shipping method and
-           payment-link preference (Email / Text) — plus every price
+           phone number and shipping address — plus every price
            (per-item prices, print fees, size upcharges, subtotal,
-           setup, rush, discount, tax, estimated shipping and the
+           setup, rush, discount, tax and the
            TOTAL). Only the labels and the fixed explanatory text
            keep the summary's normal color, and placeholder wording
            ("not provided yet") is never highlighted. */
@@ -5761,7 +5703,7 @@
              and the label keeps the summary's normal color. */
           var fullValueLabels = [
             "Customer name", "Company name", "Project name", "Customer email", "Customer phone",
-            "Shipping address", "Shipping method", "Garment source",
+            "Shipping address", "Garment source",
             "Color", "Preview view", "Print method",
             "Uploaded logo file", "Customer comment about the logo",
             "Sizes", "Quantity", "Total quantity",
@@ -6824,18 +6766,7 @@
             renderAgreement();
           });
         }
-        /* Step 5 shipping method: picking a method re-prices the
-           estimated shipping everywhere (price area, summary, and
-           the estimate line here), so a full render() runs. */
-        if (shipMethodSegEl) {
-          shipMethodSegEl.querySelectorAll("[data-ship]").forEach(function (b) {
-            b.addEventListener("click", function () {
-              state.shipMethod = b.getAttribute("data-ship");
-              hideQuoteSentNotice();
-              render();
-            });
-          });
-        }
+
         /* No "Next" buttons: every step is on this one scrolling
            page — customers scroll from step to step in the steps
            column, fill in their information (step 5), tick the
@@ -6917,7 +6848,14 @@
            (only locations with artwork placed) so the backend can
            recompute the Screen printing extra-color charge — the
            first 2 colors included, $5.00 per extra color per item
-           for that location — exactly as this designer did. */
+           for that location — exactly as this designer did.
+           total is items + setup + rush + 9.5% tax ONLY — shipping
+           is not in it: weightLb carries the total order weight in
+           pounds so Wix charges shipping at checkout, and
+           previewImageDataUrl carries the rendered design preview
+           PNG (the same image sent to Forminit with the quote) so
+           the order shows what the customer is ordering; it is
+           omitted when no preview was captured. */
         var PAY_LINK_WORKER_URL = "https://onegraphicsdesign-pay-links.oneonegraphics.workers.dev/create-pay-link";
         /* Take the customer to the Wix checkout URL — WITHOUT
            opening any window from code. An earlier version opened
@@ -6977,6 +6915,11 @@
         }
         var payNowPayload = null;
         var payNowInFlight = false;
+        /* The rendered design preview PNG as a data URL, captured
+           by the GO TO CHECKOUT handler from the same preview it
+           sends to Forminit, and carried to the pay-link Worker as
+           previewImageDataUrl. Empty until a preview is captured. */
+        var pendingPreviewDataUrl = "";
         function buildPayNowPayload() {
           var price = null;
           try { price = computePrice(); } catch (err) { price = null; }
@@ -7002,7 +6945,9 @@
             var d = state.designs[p];
             if (d && d.src) colorCounts[p] = logoColorCount(d);
           });
-          return {
+          var totOz = null;
+          try { totOz = totalWeightOz(); } catch (err2) { totOz = null; }
+          var payload = {
             designer: "shirt",
             item: item,
             method: state.method,
@@ -7011,9 +6956,11 @@
             sizes: sizes,
             ownGarment: !!state.ownGarment,
             rush: !!state.rushWanted,
-            shippingMethod: state.shipMethod || "standard",
+            weightLb: totOz != null ? Math.round((totOz / 16) * 10000) / 10000 : 0,
             total: price && typeof price.total === "number" ? Math.round(price.total * 100) / 100 : 0
           };
+          if (pendingPreviewDataUrl) payload.previewImageDataUrl = pendingPreviewDataUrl;
+          return payload;
         }
         /* Full-screen thank-you: only ever called on a real Forminit
            success (see the GO TO CHECKOUT handler below). It hides the
@@ -7488,10 +7435,12 @@
             } else {
               ctx.drawImage(artImg, artX, artY, artW, artH);
             }
+            var dataUrl = null;
+            try { dataUrl = canvas.toDataURL("image/png"); } catch (e) { dataUrl = null; }
             return new Promise(function (res) {
               if (!canvas.toBlob) { res(null); return; }
               canvas.toBlob(function (blob) {
-                res(blob ? { blob: blob, name: "design-preview-" + placement + ".png", placement: placement } : null);
+                res(blob ? { blob: blob, name: "design-preview-" + placement + ".png", placement: placement, dataUrl: dataUrl } : null);
               }, "image/png");
             });
           }).catch(function () { return null; });
@@ -7710,6 +7659,11 @@
             captureJob.then(function (preview) {
               var previewFile = null;
               previewSummaryNote = "";
+              /* The same preview PNG also travels to the pay-link
+                 Worker as a data URL (previewImageDataUrl in the
+                 payload), so the Wix order shows what the customer
+                 is ordering. No preview — no field. */
+              pendingPreviewDataUrl = preview && preview.dataUrl ? preview.dataUrl : "";
               if (preview && preview.blob) {
                 if (totalBytes + preview.blob.size <= 24 * 1024 * 1024) {
                   previewFile = preview;
@@ -8567,8 +8521,6 @@
           "Front + pocket + back": "Frente + bolsillo + espalda", "Front + left pocket + back": "Frente + bolsillo izquierdo + espalda",
           "No artwork placed yet — no print fee": "Aún no hay diseño colocado — sin cargo de impresión"
         };
-        var SHIP_ES = { "Standard Ground": "Envío terrestre estándar", "Priority Mail": "Correo prioritario", "Priority Mail Express": "Correo prioritario exprés" };
-        var DAYS_ES = { "4–8 business days": "4–8 días hábiles", "3–5 business days": "3–5 días hábiles", "2–3 business days": "2–3 días hábiles" };
         var VIEW_ES = { "Front": "Vista del frente", "Back": "Vista de la espalda", "Pocket": "Vista del bolsillo", "Left pocket": "Vista del bolsillo izquierdo" };
         var MISSING_ES = { "your full name": "tu nombre completo", "a valid email": "un correo electrónico válido", "your phone number": "tu número de teléfono", "your street address": "tu dirección", "your city": "tu ciudad", "your state": "tu estado", "your ZIP code": "tu código postal" };
         var NEEDS8_ES = { "a logo uploaded on the shirt": "un logo subido en la camiseta", "your information in step 5": "tu información en el paso 5", "both boxes ticked in step 7": "las dos casillas marcadas en el paso 7", "a rush date at least a week out": "una fecha urgente de al menos una semana" };
@@ -8713,16 +8665,12 @@
           "Your": "Tu",
           "is priced by the shop — email your design summary in step 6 to": "tiene el precio fijado por la tienda — envía el resumen de tu diseño del paso 6 por correo a",
           "for your exact price. No price is guessed on this page.": "para obtener tu precio exacto. En esta página no se inventa ningún precio.",
-          "Your total above includes 9.5% Los Angeles tax plus estimated shipping, worked out from your order’s total weight and the shipping method you pick in step 5. Estimated shipping included in total above — final shipping is confirmed by the owner. When you are ready, send your design summary in step 8 to place your order. If you’re providing your own garment (step 4), you only pay for the printing — there’s no garment charge.": "Tu total de arriba incluye el 9.5% de impuestos de Los Ángeles más el envío estimado, calculado según el peso total de tu pedido y el método de envío que elijas en el paso 5. El envío estimado está incluido en el total de arriba — el envío final lo confirma el dueño. Cuando estés listo, envía el resumen de tu diseño en el paso 8 para hacer tu pedido. Si proporcionas tu propia prenda (paso 4), solo pagas la impresión — no hay cargo por la prenda.",
-          "Tell us who you are and where to ship your order, and pick your shipping method. Everything here is required before GO TO CHECKOUT unlocks in step 8.": "Cuéntanos quién eres y dónde enviar tu pedido, y elige tu método de envío. Todo esto es obligatorio antes de que IR A PAGAR se desbloquee en el paso 8.",
+          "Your total above includes 9.5% Los Angeles tax. Shipping: calculated at Wix checkout based on order weight. When you are ready, send your design summary in step 8 to place your order. If you’re providing your own garment (step 4), you only pay for the printing — there’s no garment charge.": "Tu total de arriba incluye el 9.5% de impuestos de Los Ángeles. Envío: calculado al pagar en Wix según el peso del pedido. Cuando estés listo, envía el resumen de tu diseño en el paso 8 para hacer tu pedido. Si proporcionas tu propia prenda (paso 4), solo pagas la impresión — no hay cargo por la prenda.",
+          "Tell us who you are and where to ship your order. You pick your delivery speed and pay for shipping at Wix checkout. Everything here is required before GO TO CHECKOUT unlocks in step 8.": "Cuéntanos quién eres y dónde enviar tu pedido. Tú eliges la velocidad de entrega y pagas el envío al pagar en Wix. Todo esto es obligatorio antes de que IR A PAGAR se desbloquee en el paso 8.",
           "Full name *": "Nombre completo *", "Company name": "Nombre de la empresa", "(optional)": "(opcional)",
           "Project name": "Nombre del proyecto", "Email *": "Correo electrónico *", "Phone number *": "Número de teléfono *",
           "Street address *": "Dirección *", "City *": "Ciudad *", "State *": "Estado *", "ZIP code *": "Código postal *",
-          "Shipping method *": "Método de envío *",
-          "Standard Ground": "Envío terrestre estándar", "Priority Mail": "Correo prioritario", "Priority Mail Express": "Correo prioritario exprés",
-          "4–8 business days": "4–8 días hábiles", "3–5 business days": "3–5 días hábiles", "2–3 business days": "2–3 días hábiles",
-          "Your estimated shipping appears here once quantities are added in step 3 — it is based on your order's total weight.": "Tu envío estimado aparecerá aquí cuando agregues las cantidades en el paso 3 — se basa en el peso total de tu pedido.",
-          "Estimated shipping is worked out from your order’s total weight and added to your quote total — it is an estimate only, and final shipping is confirmed by the owner.": "El envío estimado se calcula según el peso total de tu pedido y se suma al total de tu cotización — es solo un estimado, y el envío final lo confirma el dueño.",
+          "Shipping: calculated at Wix checkout based on order weight — you pick your delivery speed there.": "Envío: calculado al pagar en Wix según el peso del pedido — ahí eliges la velocidad de entrega.",
           "Please fill in every field above — GO TO CHECKOUT in step 8 stays locked until your information is complete.": "Completa todos los campos de arriba — IR A PAGAR en el paso 8 permanece bloqueado hasta que tu información esté completa.",
           "✓ Got it — your information is complete.": "✓ Listo — tu información está completa.",
           "Everything collected in one place — all your print details and your client details together. This is the exact summary that gets sent when you tap GO TO CHECKOUT in step 8 at the bottom of the page, and it updates live as you change anything.": "Todo reunido en un solo lugar — todos los detalles de impresión y tus datos de cliente juntos. Este es el resumen exacto que se envía cuando tocas IR A PAGAR en el paso 8, al final de la página, y se actualiza en vivo cuando cambias algo.",
@@ -8822,7 +8770,6 @@
           [/^You have (\d+) — add (\d+) more to reach the minimum\.$/, function (m) { return "Tienes " + m[1] + " — agrega " + m[2] + " más para llegar al mínimo."; }],
           [/^✓ Minimum met — (\d+) (.+?)\.$/, function (m) { return "✓ Mínimo alcanzado — " + m[1] + " " + mapOf(PLURAL_ES, m[2]) + "."; }],
           [/^Total: (\d+) (.+)$/, function (m) { return "Total: " + m[1] + " " + mapOf(PLURAL_ES, m[2]); }],
-          [/^Estimated shipping — (.+?): (.+?) \(order weight (.+?)\)\. It is included in your quote total\.$/, function (m) { return "Envío estimado — " + mapOf(SHIP_ES, m[1]) + ": " + m[2] + " (peso del pedido: " + m[3] + "). Está incluido en el total de tu cotización."; }],
           [/^Still needed: (.+?)\. GO TO CHECKOUT in step 8 stays locked until your information is complete\.$/, function (m) { return "Aún falta: " + m[1].split(", ").map(function (x) { return mapOf(MISSING_ES, x); }).join(", ") + ". IR A PAGAR en el paso 8 permanece bloqueado hasta que tu información esté completa."; }],
           [/^Still needed before checkout: (.+?)\.$/, function (m) { return "Aún falta antes de pagar: " + m[1].split(", ").map(function (x) { return needsItemEs(x); }).join(", ") + "."; }],
           [/^Quantities are required — add at least (\d+) items in step 3 \(you have (\d+)\) before sending your quote\.$/, function (m) { return "Se requieren cantidades — agrega al menos " + m[1] + " artículos en el paso 3 (tienes " + m[2] + ") antes de enviar tu cotización."; }],
@@ -8852,8 +8799,7 @@
           [/^Volume discount \((\d+) items, ([\d.]+)% off\)$/, function (m) { return "Descuento por volumen (" + m[1] + " artículos, " + m[2] + "% de descuento)"; }],
           [/^Size upcharges \((.+?)\)$/, function (m) { return "Recargos por talla (" + m[1] + ")"; }],
           [/^Rush fee \(([\d.]+)% per item\)$/, function (m) { return "Cargo por urgencia (" + m[1] + "% por artículo)"; }],
-          [/^Estimated shipping — (.+?) \((.+?)\)$/, function (m) { return "Envío estimado — " + mapOf(SHIP_ES, m[1]) + " (" + mapOf(DAYS_ES, m[2]) + ")"; }],
-          [/^Total for (\d+) (.+?) \(incl\. tax \+ estimated shipping\)$/, function (m) { return "Total por " + m[1] + " " + mapOf(PLURAL_ES, m[2]) + " (impuestos + envío estimado incluidos)"; }],
+          [/^Total for (\d+) (.+?) \(incl\. tax\)$/, function (m) { return "Total por " + m[1] + " " + mapOf(PLURAL_ES, m[2]) + " (impuestos incluidos)"; }],
           [/^Below the (\d+)-item minimum$/, function (m) { return "Por debajo del mínimo de " + m[1] + " artículos"; }],
           [/^(\$[\d,]+\.\d{2}) \/ item — you provide it$/, function (m) { return m[1] + " / artículo — tú la proporcionas"; }],
           [/^(\$[\d,]+\.\d{2}) \/ item$/, function (m) { return m[1] + " / artículo"; }],
@@ -8863,7 +8809,7 @@
            messages (the step 3 confirmation, the price notes). */
         var PHRASES = [
           [/GO TO CHECKOUT/g, "IR A PAGAR"],
-          [/Your order total is (.+?) incl\. tax and estimated shipping — see “Your price” below\./g, function (m, g1) { return "El total de tu pedido es " + g1 + ", con impuestos y envío estimado incluidos — mira «Tu precio» abajo."; }],
+          [/Your order total is (.+?) incl\. tax — shipping is calculated at Wix checkout\. See “Your price” below\./g, function (m, g1) { return "El total de tu pedido es " + g1 + ", con impuestos incluidos — el envío se calcula al pagar en Wix. Mira «Tu precio» abajo."; }],
           [/No print fee is included yet — print fees are charged only for locations where you place artwork with the Upload button on the shirt\./g, "Aún no se incluye cargo de impresión — los cargos de impresión solo se cobran en las ubicaciones donde colocas tu diseño con el botón Subir en la camiseta."],
           [/You’ve confirmed in step 7 and your information in step 5 is complete, so Copy and IR A PAGAR in step 8 are unlocked\./g, "Ya confirmaste en el paso 7 y tu información del paso 5 está completa, así que Copiar e IR A PAGAR en el paso 8 están desbloqueados."],
           [/One thing left: upload your logo on the shirt — a logo is required before IR A PAGAR in step 8 unlocks, and blank items can’t be quoted\./g, "Solo falta una cosa: sube tu logo en la camiseta — se requiere un logo antes de que IR A PAGAR en el paso 8 se desbloquee, y los artículos en blanco no se pueden cotizar."],
@@ -8875,8 +8821,7 @@
           [/\+ (\$[\d,]+\.\d{2}) setup fee/g, function (m, g1) { return "+ " + g1 + " de cargo de preparación"; }],
           [/\+ (\$[\d,]+\.\d{2}) rush fee/g, function (m, g1) { return "+ " + g1 + " de cargo por urgencia"; }],
           [/, plus 9\.5% Los Angeles tax/g, ", más el 9.5% de impuestos de Los Ángeles"],
-          [/, plus estimated shipping of (\$[\d,]+\.\d{2}) \((.+?), based on your order’s weight\)/g, function (m, g1, g2) { return ", más el envío estimado de " + g1 + " (" + mapOf(SHIP_ES, g2) + ", según el peso de tu pedido)"; }],
-          [/Estimated shipping included in total above — final shipping is confirmed by the owner\. Your Wix Pay Link is created for this exact total with shipping already included, so Wix shipping is not added again on top\./g, "El envío estimado está incluido en el total de arriba — el envío final lo confirma el dueño. Tu enlace de pago de Wix se crea por este total exacto con el envío ya incluido, así que el envío de Wix no se cobra otra vez."],
+          [/Shipping: calculated at Wix checkout based on order weight/g, "Envío: calculado al pagar en Wix según el peso del pedido"],
           [/That price per item is printing only — you’re providing the garment, so there’s no garment charge — from the shop\./g, "Ese precio por artículo es solo la impresión — tú proporcionas la prenda, así que no hay cargo por la prenda — de la tienda."],
           [/That price per item is item \+ printing added together from the shop\./g, "Ese precio por artículo es el artículo + la impresión sumados, de la tienda."],
           [/That price per item is the item only — no artwork placed yet, so no print fee — from the shop\./g, "Ese precio por artículo es solo el artículo — aún no hay diseño colocado, así que no hay cargo de impresión — de la tienda."],
